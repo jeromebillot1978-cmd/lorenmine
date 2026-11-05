@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minecraft 3D - Three.js</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Canvas injecté par Three.js -->
+
+    <!-- Réticule au centre -->
+    <div id="crosshair">+</div>
+
+    <!-- Info bloc sélectionné -->
+    <div id="selected-block-info">
+        <span id="selected-block-name">🌍 Terre</span>
+    </div>
+
+    <!-- Indicateur de vitesse -->
+    <div id="speed-indicator">Vitesse : <span id="speed-value">1.0</span>x</div>
+
+    <!-- Indicateur de mode -->
+    <div id="mode-indicator">Mode : Vol ✈️</div>
+
+    <!-- Boutons top-right -->
+    <div id="top-buttons">
+        <button id="btn-day" class="ui-btn">☀️ Jour</button>
+        <button id="btn-night" class="ui-btn">🌙 Nuit</button>
+        <button id="btn-cycle" class="ui-btn">🔄 Cycle Auto</button>
+        <button id="btn-settings" class="ui-btn">⚙️ Paramètres</button>
+    </div>
+
+    <!-- Aide -->
+    <div id="help">
+        <p><b>ZQSD</b> : Déplacement — <b>Espace</b> : Monter — <b>Shift</b> : Descendre</p>
+        <p><b>Souris</b> : Regarder — <b>Clic gauche</b> : Casser — <b>Clic droit</b> : Placer</p>
+        <p><b>E</b> : Inventaire — <b>F</b> : Vol/Marche — <b>Molette</b> : Changer de bloc</p>
+    </div>
+
+    <!-- Barre d'inventaire rapide -->
+    <div id="hotbar"></div>
+
+    <!-- Inventaire complet -->
+    <div id="inventory">
+        <h2>Inventaire</h2>
+        <div id="inventory-grid"></div>
+        <p class="inventory-hint">Cliquez sur un bloc pour le sélectionner — E pour fermer</p>
+    </div>
+
+    <!-- Panneau Paramètres -->
+    <div id="settings-panel">
+        <h2>⚙️ Paramètres</h2>
+        <div class="setting-row">
+            <label for="speed-slider">Vitesse du joueur</label>
+            <input type="range" id="speed-slider" min="0.5" max="4" step="0.1" value="1">
+            <span id="speed-slider-value">1.0x</span>
+        </div>
+        <div class="setting-row">
+            <label for="render-distance">Distance de rendu</label>
+            <input type="range" id="render-distance" min="40" max="200" step="10" value="100">
+            <span id="render-distance-value">100</span>
+        </div>
+        <div class="setting-row checkbox-row">
+            <label for="chk-cycle">Cycle jour/nuit automatique</label>
+            <input type="checkbox" id="chk-cycle" checked>
+        </div>
+        <div class="settings-actions">
+            <button id="btn-reset-world" class="ui-btn danger">🗑️ Réinitialiser le monde</button>
+            <button id="btn-close-settings" class="ui-btn">Fermer</button>
+        </div>
+    </div>
+
+    <!-- Overlay -->
+    <div id="overlay"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
