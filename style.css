@@ -1,147 +1,94 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>⚡ ULTRA FIGHTER Z - Prairie & Twitch ⚡</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-  <div id="game-container">
-    <canvas id="gameCanvas"></canvas>
+* { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #000; font-family: 'Arial Black', 'Impact', sans-serif; color: #fff; }
+#game-container { position: relative; width: 100vw; height: 100vh; overflow: hidden; background: #000; }
+#gameCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block; }
 
-    <!-- HUD -->
-    <div id="hud">
-      <div class="health-section left">
-        <div class="fighter-name" id="p1Name">RYU</div>
-        <div class="health-bar-container">
-          <div class="health-bar-bg"><div class="health-bar-fill p1" id="p1Health"></div></div>
-          <div class="energy-bar-bg"><div class="energy-bar-fill p1" id="p1Energy"></div></div>
-        </div>
-      </div>
-      <div class="timer-section">
-        <div id="timer">99</div>
-        <div id="round-display">ROUND 1</div>
-      </div>
-      <div class="health-section right">
-        <div class="fighter-name" id="p2Name">KEN</div>
-        <div class="health-bar-container">
-          <div class="health-bar-bg"><div class="health-bar-fill p2" id="p2Health"></div></div>
-          <div class="energy-bar-bg"><div class="energy-bar-fill p2" id="p2Energy"></div></div>
-        </div>
-      </div>
-    </div>
+/* HUD */
+#hud { position: absolute; top: 0; left: 0; width: 100%; padding: 12px 20px; display: flex; justify-content: space-between; align-items: flex-start; pointer-events: none; z-index: 10; }
+.health-section { width: 40%; max-width: 420px; }
+.health-section.right { text-align: right; }
+.fighter-name { font-size: clamp(14px, 2vw, 22px); letter-spacing: 2px; text-shadow: 0 0 10px rgba(255,200,0,0.9), 0 2px 4px #000; margin-bottom: 4px; color: #ffcc00; }
+.health-bar-container { position: relative; }
+.health-bar-bg { width: 100%; height: clamp(16px, 2.5vw, 28px); background: #1a1a2e; border: 2px solid #555; border-radius: 4px; overflow: hidden; box-shadow: inset 0 0 10px rgba(0,0,0,0.9), 0 0 8px rgba(255,50,50,0.4); position: relative; }
+.health-bar-fill { height: 100%; width: 100%; transition: width 0.25s ease-out; border-radius: 2px; position: relative; }
+.health-bar-fill.p1 { background: linear-gradient(180deg, #ff4444, #cc0000); box-shadow: inset 0 -6px 8px rgba(0,0,0,0.35), 0 0 12px rgba(255,60,60,0.7); }
+.health-bar-fill.p2 { background: linear-gradient(180deg, #ff8844, #cc4400); box-shadow: inset 0 -6px 8px rgba(0,0,0,0.35), 0 0 12px rgba(255,140,60,0.7); float: right; }
+.health-section.right .health-bar-bg { direction: rtl; }
+.energy-bar-bg { width: 100%; height: clamp(6px, 1vw, 10px); background: #111; border: 1px solid #333; border-radius: 3px; margin-top: 4px; overflow: hidden; }
+.energy-bar-fill { height: 100%; width: 0%; transition: width 0.15s ease; }
+.energy-bar-fill.p1 { background: linear-gradient(90deg, #00c8ff, #00ffcc); box-shadow: 0 0 8px rgba(0,220,255,0.9); }
+.energy-bar-fill.p2 { background: linear-gradient(90deg, #ff00c8, #ffcc00); box-shadow: 0 0 8px rgba(255,50,200,0.9); float: right; }
 
-    <div id="comboDisplay"></div>
-    <div id="announcement"></div>
+/* Timer */
+.timer-section { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 90px; margin-top: 4px; }
+#timer { font-size: clamp(28px, 4.5vw, 52px); font-weight: 900; color: #fff; text-shadow: 0 0 15px #ffcc00, 0 0 30px #ff6600, 0 2px 6px #000; line-height: 1; letter-spacing: 2px; }
+#round-display { font-size: clamp(9px, 1.2vw, 13px); color: #aaa; letter-spacing: 3px; margin-top: 2px; text-shadow: 0 1px 3px #000; }
 
-    <!-- Interface Twitch -->
-    <div id="twitchChatBox" class="hidden">
-      <div class="twitch-header"><span class="twitch-logo">Twitch Chat</span> <span id="twitchStatus">Déconnecté</span></div>
-      <div id="twitchMessages"></div>
-      <div class="twitch-input-area">
-        <input type="text" id="twitchInput" placeholder="Se connecter à une chaîne (ex: ponce)..." autocomplete="off">
-        <button id="btnConnectTwitch">GO</button>
-      </div>
-      <div class="twitch-help">Commandes : !left, !right, !jump, !punch, !kick, !block, !super</div>
-    </div>
+/* Combo & Annonces */
+#comboDisplay { position: absolute; top: 18%; left: 50%; transform: translateX(-50%); font-size: clamp(20px, 3.5vw, 40px); font-weight: 900; color: #ffdd00; text-shadow: 0 0 20px #ff6600, 0 0 40px #ff2200, 0 3px 6px #000; pointer-events: none; z-index: 20; opacity: 0; transition: opacity 0.2s, transform 0.2s; white-space: nowrap; }
+#comboDisplay.show { opacity: 1; transform: translateX(-50%) scale(1.15); }
+#announcement { position: absolute; top: 35%; left: 50%; transform: translate(-50%, -50%) scale(0.5); font-size: clamp(36px, 8vw, 110px); font-weight: 900; letter-spacing: 4px; color: #fff; text-shadow: 0 0 30px #ffcc00, 0 0 60px #ff6600, 0 0 90px #ff0000, 0 4px 8px #000; pointer-events: none; z-index: 30; opacity: 0; transition: opacity 0.25s, transform 0.25s; white-space: nowrap; text-align: center; }
+#announcement.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 
-    <!-- Menu principal -->
-    <div id="mainMenu" class="menu">
-      <h1 class="game-title">ULTRA<span>FIGHTER</span>Z</h1>
-      <div class="menu-buttons">
-        <button class="menu-btn" id="btnSolo">MODE SOLO</button>
-        <button class="menu-btn" id="btn2P">2 JOUEURS (LOCAL)</button>
-        <button class="menu-btn" id="btnTwitch">MODE TWITCH</button>
-        <button class="menu-btn" id="btnCredits">CRÉDITS</button>
-      </div>
-    </div>
+/* Menus */
+.menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(ellipse at center, rgba(20,10,40,0.92) 0%, rgba(0,0,0,0.97) 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; padding: 20px; backdrop-filter: blur(4px); }
+.menu.hidden { display: none !important; }
+.game-title { font-size: clamp(38px, 9vw, 110px); font-weight: 900; letter-spacing: 6px; color: #fff; text-shadow: 0 0 20px #ff3300, 0 0 40px #ff6600, 0 0 80px #ffaa00, 0 6px 12px #000; text-align: center; line-height: 0.95; margin-bottom: 8vh; }
+.game-title span { display: block; font-size: 0.45em; color: #ffcc00; text-shadow: 0 0 20px #ff6600, 0 0 40px #ff2200; letter-spacing: 10px; }
+.section-title { font-size: clamp(20px, 4vw, 42px); color: #ffcc00; text-shadow: 0 0 15px #ff6600, 0 3px 6px #000; letter-spacing: 4px; margin-bottom: 30px; text-align: center; }
+.menu-buttons { display: flex; flex-direction: column; gap: clamp(12px, 2vh, 22px); align-items: center; }
+.menu-btn { font-family: inherit; font-size: clamp(16px, 2.2vw, 26px); font-weight: 900; letter-spacing: 3px; color: #fff; background: linear-gradient(135deg, #cc2200, #ff6600, #ffaa00); border: 3px solid #ffcc44; border-radius: 6px; padding: clamp(10px, 1.6vh, 18px) clamp(30px, 5vw, 60px); cursor: pointer; text-shadow: 0 2px 4px #000; box-shadow: 0 0 20px rgba(255,100,0,0.5), 0 4px 0 #881100, 0 6px 10px #000; transition: transform 0.08s, box-shadow 0.15s, background 0.15s; outline: none; min-width: 180px; }
+.menu-btn:hover { background: linear-gradient(135deg, #ff3300, #ff8800, #ffcc00); box-shadow: 0 0 35px rgba(255,180,0,0.85), 0 4px 0 #881100, 0 6px 14px #000; transform: scale(1.04); }
+.menu-btn:active { transform: scale(0.97) translateY(3px); box-shadow: 0 0 15px rgba(255,100,0,0.5), 0 1px 0 #881100; }
+.menu-btn.small { font-size: clamp(13px, 1.6vw, 19px); padding: clamp(8px, 1.2vh, 14px) clamp(20px, 3vw, 36px); min-width: 130px; }
+.menu-footer { margin-top: 4vh; display: flex; gap: 18px; align-items: center; justify-content: center; flex-wrap: wrap; font-size: 13px; color: #888; letter-spacing: 2px; }
 
-    <!-- Sélection personnage -->
-    <div id="charSelect" class="menu hidden">
-      <h2 class="section-title">CHOISIS TON COMBATTANT</h2>
-      <div class="char-grid" id="charGrid"></div>
-      <div class="selection-info">
-        <div id="p1Pick" class="pick-label">J1: —</div>
-        <div id="p2Pick" class="pick-label">J2: —</div>
-      </div>
-      <div class="menu-footer">
-        <button class="menu-btn small" id="btnBackFromChar">RETOUR</button>
-        <button class="menu-btn small" id="btnConfirmChar">COMBATTRE !</button>
-      </div>
-    </div>
+/* Sélection */
+.char-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: clamp(10px, 2vw, 24px); max-width: 900px; width: 100%; padding: 0 20px; }
+.char-card { background: linear-gradient(160deg, #1a1a30, #0a0a18); border: 3px solid #444; border-radius: 10px; padding: clamp(10px, 2vh, 20px) 8px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px; transition: transform 0.12s, border-color 0.12s, box-shadow 0.12s; position: relative; overflow: hidden; }
+.char-card:hover { transform: translateY(-5px) scale(1.03); border-color: #ffcc00; box-shadow: 0 0 25px rgba(255,180,0,0.6); }
+.char-card.p1-picked { border-color: #00ccff; box-shadow: 0 0 25px rgba(0,200,255,0.8); }
+.char-card.p2-picked { border-color: #ff00cc; box-shadow: 0 0 25px rgba(255,0,200,0.8); }
+.char-card.both-picked { border-color: #ffcc00; box-shadow: 0 0 25px rgba(255,200,0,0.9); }
+.char-portrait { width: clamp(50px, 8vw, 90px); height: clamp(50px, 8vw, 90px); border-radius: 50%; position: relative; display: flex; align-items: center; justify-content: center; font-size: clamp(24px, 4vw, 44px); font-weight: 900; text-shadow: 0 2px 6px #000; }
+.char-name { font-size: clamp(10px, 1.3vw, 15px); letter-spacing: 2px; color: #ddd; text-shadow: 0 1px 3px #000; }
+.char-role { font-size: clamp(8px, 0.9vw, 11px); color: #888; letter-spacing: 1px; }
+.selection-info { display: flex; gap: 40px; margin-top: 3vh; font-size: clamp(13px, 1.8vw, 20px); font-weight: 900; letter-spacing: 2px; }
+.pick-label { padding: 6px 18px; border-radius: 6px; border: 2px solid #444; background: rgba(0,0,0,0.5); }
+#p1Pick { color: #00ccff; border-color: #00ccff; text-shadow: 0 0 10px #00ccff; }
+#p2Pick { color: #ff00cc; border-color: #ff00cc; text-shadow: 0 0 10px #ff00cc; }
 
-    <!-- Sélection arène -->
-    <div id="arenaSelect" class="menu hidden">
-      <h2 class="section-title">CHOISIS L'ARÈNE</h2>
-      <div class="arena-grid" id="arenaGrid"></div>
-      <div class="menu-footer">
-        <button class="menu-btn small" id="btnBackFromArena">RETOUR</button>
-        <button class="menu-btn small" id="btnStartFight">COMBATTRE !</button>
-      </div>
-    </div>
+.arena-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: clamp(14px, 2.5vw, 30px); max-width: 800px; width: 100%; padding: 0 20px; }
+.arena-card { border: 3px solid #444; border-radius: 10px; padding: 0; cursor: pointer; overflow: hidden; transition: transform 0.12s, border-color 0.12s, box-shadow 0.12s; position: relative; aspect-ratio: 16/9; display: flex; align-items: flex-end; justify-content: center; }
+.arena-card:hover { transform: scale(1.04); border-color: #ffcc00; box-shadow: 0 0 25px rgba(255,180,0,0.6); }
+.arena-card.selected { border-color: #ffcc00; box-shadow: 0 0 30px rgba(255,200,0,0.9); }
+.arena-preview { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+.arena-label { position: relative; z-index: 2; width: 100%; text-align: center; padding: 8px; background: linear-gradient(0deg, rgba(0,0,0,0.85), transparent); font-size: clamp(12px, 1.6vw, 18px); letter-spacing: 2px; font-weight: 900; text-shadow: 0 2px 4px #000; }
 
-    <!-- Difficulté -->
-    <div id="difficultySelect" class="menu hidden">
-      <h2 class="section-title">DIFFICULTÉ</h2>
-      <div class="menu-buttons">
-        <button class="menu-btn diff-btn" data-diff="easy">FACILE</button>
-        <button class="menu-btn diff-btn" data-diff="medium">MOYEN</button>
-        <button class="menu-btn diff-btn" data-diff="hard">DIFFICILE</button>
-        <button class="menu-btn diff-btn" data-diff="expert">EXPERT</button>
-      </div>
-      <div class="menu-footer">
-        <button class="menu-btn small" id="btnBackFromDiff">RETOUR</button>
-      </div>
-    </div>
+.credits-text { text-align: center; font-size: clamp(13px, 1.8vw, 20px); line-height: 2; color: #ccc; letter-spacing: 1px; font-family: 'Arial', sans-serif; font-weight: bold; }
+.credits-text p:first-child { color: #ffcc00; font-size: 1.5em; text-shadow: 0 0 15px #ff6600; }
+.end-title { font-size: clamp(50px, 12vw, 150px); margin-bottom: 2vh; }
+.end-text { font-size: clamp(16px, 2.5vw, 30px); color: #ffcc00; letter-spacing: 3px; margin-bottom: 5vh; text-shadow: 0 0 15px #ff6600, 0 3px 6px #000; text-align: center; }
 
-    <!-- Crédits -->
-    <div id="creditsMenu" class="menu hidden">
-      <h2 class="section-title">CRÉDITS</h2>
-      <div class="credits-text">
-        <p>⚡ ULTRA FIGHTER Z ⚡</p>
-        <p>Un jeu de combat 2D arcade</p>
-        <p>Avec des spectateurs tout mignons</p>
-        <p>Et un mode Twitch Chat !</p>
-        <p>Développé avec Canvas & JavaScript</p>
-        <p>Merci d'avoir joué !</p>
-      </div>
-      <div class="menu-footer">
-        <button class="menu-btn small" id="btnBackFromCredits">RETOUR</button>
-      </div>
-    </div>
+/* Mobile */
+#mobileControls { position: absolute; bottom: 0; left: 0; width: 100%; height: 38%; pointer-events: none; z-index: 50; display: flex; justify-content: space-between; padding: 10px 16px 18px; }
+#mobileControls.hidden { display: none !important; }
+.touch-zone { display: flex; gap: 12px; align-items: flex-end; pointer-events: none; }
+.touch-zone.right-zone { gap: 10px; }
+.touch-btn { pointer-events: auto; width: clamp(48px, 13vw, 78px); height: clamp(48px, 13vw, 78px); border-radius: 50%; background: rgba(30,30,50,0.65); border: 3px solid rgba(255,255,255,0.35); color: #fff; font-size: clamp(16px, 3.5vw, 26px); font-weight: 900; display: flex; align-items: center; justify-content: center; text-shadow: 0 2px 4px #000; box-shadow: 0 0 12px rgba(0,0,0,0.6), inset 0 0 12px rgba(255,255,255,0.1); touch-action: none; transition: background 0.08s, transform 0.08s; user-select: none; }
+.touch-btn:active, .touch-btn.active { background: rgba(255,150,0,0.75); transform: scale(0.92); }
+.touch-btn.punch { border-color: #ff6644; color: #ff8866; }
+.touch-btn.kick { border-color: #44ff88; color: #88ffaa; }
+.touch-btn.block { border-color: #44aaff; color: #88ccff; }
+.touch-btn.super { border-color: #ffcc00; color: #ffdd44; background: rgba(80,40,0,0.7); }
 
-    <!-- Écran de fin -->
-    <div id="endScreen" class="menu hidden">
-      <h1 class="game-title end-title" id="endTitle">K.O.</h1>
-      <div class="end-text" id="endText"></div>
-      <div class="menu-buttons">
-        <button class="menu-btn" id="btnRematch">REJOUER</button>
-        <button class="menu-btn" id="btnMainMenu">MENU PRINCIPAL</button>
-      </div>
-    </div>
+.controls-hint { position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); display: flex; gap: 30px; font-size: clamp(8px, 1vw, 11px); color: rgba(255,255,255,0.4); letter-spacing: 1px; z-index: 40; pointer-events: none; white-space: nowrap; font-family: monospace; }
+.controls-hint.hidden { display: none; }
 
-    <!-- Contrôles mobile -->
-    <div id="mobileControls" class="hidden">
-      <div class="touch-zone left-zone">
-        <div class="touch-btn" id="mLeft">◀</div>
-        <div class="touch-btn" id="mRight">▶</div>
-        <div class="touch-btn" id="mJump">▲</div>
-      </div>
-      <div class="touch-zone right-zone">
-        <div class="touch-btn punch" id="mPunch">P</div>
-        <div class="touch-btn kick" id="mKick">K</div>
-        <div class="touch-btn block" id="mBlock">B</div>
-        <div class="touch-btn super" id="mSuper">S</div>
-      </div>
-    </div>
-
-    <div id="controlsHint" class="controls-hint">
-      <span class="p1-hint">J1: Q D Z | E R F A</span>
-      <span class="p2-hint">J2: ← → ↑ | 1 2 3 0</span>
-    </div>
-  </div>
-
-  <script src="script.js"></script>
-</body>
-</html>
+@media (max-width: 700px) {
+  .char-grid { grid-template-columns: repeat(2, 1fr); }
+  .arena-grid { grid-template-columns: 1fr; max-width: 420px; }
+  .controls-hint { display: none; }
+  #hud { padding: 6px 10px; }
+  .fighter-name { font-size: 11px; }
+}
