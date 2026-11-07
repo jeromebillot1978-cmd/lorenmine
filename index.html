@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minecraft 3D - Three.js Optimisé</title>
+    <title>LorenMine — Voxel Survie</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -26,26 +26,32 @@
         <div id="monster-counter">Monstres : 0</div>
     </div>
 
-    <!-- Compteurs survie -->
     <div id="survival-hud">
         <div class="survival-item"><span class="ico">💀</span><span id="kills-value">0</span></div>
         <div class="survival-item"><span class="ico">🪙</span><span id="coins-value">0</span></div>
     </div>
 
-    <!-- Barre de vie -->
     <div id="health-bar-container">
         <div id="health-bar-fill"></div>
         <div id="health-text">❤️ 20 / 20</div>
     </div>
 
-    <!-- Mini-carte -->
+    <!-- Arme équipée -->
+    <div id="weapon-hud">
+        <div id="weapon-icon">🗡️</div>
+        <div id="weapon-info">
+            <div id="weapon-name">Épée en bois</div>
+            <div id="weapon-durability-bar"><div id="weapon-durability-fill"></div></div>
+        </div>
+    </div>
+
     <div id="minimap-container">
         <canvas id="minimap" width="180" height="180"></canvas>
         <div id="minimap-coords">0, 0</div>
     </div>
 
-    <!-- Messages flottants (dégâts, butin) -->
     <div id="floating-messages"></div>
+    <div id="particles-layer"></div>
 
     <div id="top-buttons">
         <button id="btn-day" class="ui-btn" title="Passer au jour">☀️ Jour</button>
@@ -56,15 +62,19 @@
 
     <div id="help">
         <p><b>ZQSD</b> déplacement · <b>Espace/Shift</b> monter/descendre · <b>Souris</b> regarder</p>
-        <p><b>Clic G</b> casser/attaquer · <b>Clic D</b> placer · <b>E</b> inventaire · <b>F</b> vol · <b>Molette/1-9</b> bloc</p>
+        <p><b>Clic G</b> attaque/casser · <b>Clic D</b> placer · <b>E</b> inventaire · <b>F</b> vol · <b>T</b> torche</p>
     </div>
 
     <div id="hotbar"></div>
 
     <div id="inventory" class="panel">
         <h2>Inventaire</h2>
+        <div id="inventory-tabs">
+            <button class="inv-tab active" data-tab="blocks">🧱 Blocs</button>
+            <button class="inv-tab" data-tab="weapons">⚔️ Armes</button>
+        </div>
         <div id="inventory-grid"></div>
-        <p class="panel-hint">Cliquez sur un bloc pour le sélectionner · E pour fermer</p>
+        <p class="panel-hint">Cliquez sur un item · E pour fermer</p>
     </div>
 
     <div id="settings-panel" class="panel">
@@ -115,7 +125,7 @@
             <input type="checkbox" id="chk-fps" checked>
         </div>
         <div class="setting-row checkbox-row">
-            <label>Mode survie (dégâts)</label>
+            <label>Mode survie</label>
             <input type="checkbox" id="chk-survival" checked>
         </div>
         <div class="settings-actions">
@@ -124,7 +134,6 @@
         </div>
     </div>
 
-    <!-- Game Over -->
     <div id="game-over">
         <h1>💀 GAME OVER</h1>
         <p id="game-over-stats">Vous avez été terrassé...</p>
