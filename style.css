@@ -1,5 +1,5 @@
-* { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
-html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #000; color: #fff; -webkit-tap-highlight-color: transparent; }
+* { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
+html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #000; color: #fff; touch-action: none; }
 canvas { display: block; }
 
 #crosshair { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; font-size: 22px; font-weight: bold; text-shadow: 0 0 4px #000; pointer-events: none; z-index: 10; }
@@ -96,15 +96,38 @@ canvas { display: block; }
 #overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.35); z-index: 50; display: none; }
 #overlay.active { display: block; }
 
+/* ====== MOBILE ====== */
+#joystick-container { display: none; position: absolute; bottom: 140px; left: 30px; width: 140px; height: 140px; z-index: 30; pointer-events: auto; }
+#joystick-base { width: 140px; height: 140px; border-radius: 50%; background: rgba(0,0,0,0.35); border: 3px solid rgba(255,255,255,0.4); position: relative; }
+#joystick-knob { width: 60px; height: 60px; border-radius: 50%; background: rgba(255,215,0,0.7); border: 2px solid #FFD700; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+
+#mobile-buttons { display: none; position: absolute; bottom: 140px; right: 20px; width: 200px; height: 200px; z-index: 30; pointer-events: none; }
+.mobile-btn { position: absolute; width: 64px; height: 64px; border-radius: 50%; background: rgba(30,30,30,0.75); border: 3px solid #FFD700; color: #fff; font-size: 22px; cursor: pointer; pointer-events: auto; display: flex; align-items: center; justify-content: center; transition: transform 0.1s; }
+.mobile-btn:active { transform: scale(0.9); background: rgba(255,215,0,0.3); }
+#mb-attack { bottom: 70px; right: 70px; border-color: #ff4444; }
+#mb-place { bottom: 0px; right: 0px; border-color: #4CAF50; }
+#mb-jump { bottom: 140px; right: 0px; }
+#mb-descend { bottom: 0px; right: 140px; }
+#mb-inventory { top: 0px; right: 70px; font-size: 18px; }
+#mb-fly { bottom: 140px; right: 70px; font-size: 18px; }
+
+/* Ajustements mobiles généraux */
 @media (max-width: 800px) {
     #help { display: none; }
     .panel, #game-over { min-width: 90vw; }
     .hotbar-slot { width: 56px; height: 50px; font-size: 9px; }
+    #hotbar { gap: 4px; padding: 6px 8px; bottom: 10px; }
     #top-buttons { gap: 4px; }
     .ui-btn { padding: 6px 10px; font-size: 11px; }
-    #minimap-container { bottom: 80px; right: 10px; }
-    #minimap { width: 110px; height: 110px; }
-    #health-bar-container { width: 200px; bottom: 90px; }
-    #weapon-hud { bottom: 130px; padding: 6px 12px; }
+    #minimap-container { bottom: 100px; right: 10px; }
+    #minimap { width: 100px; height: 100px; }
+    #health-bar-container { width: 180px; bottom: 80px; }
+    #weapon-hud { bottom: 120px; padding: 6px 12px; font-size: 11px; }
     #fps-counter, #chunk-counter, #draw-counter, #monster-counter { min-width: 55px; font-size: 10px; padding: 4px 6px; }
+    #survival-hud { bottom: 190px; right: 10px; font-size: 12px; }
+    #joystick-container { display: block; }
+    #mobile-buttons { display: block; }
+    #crosshair { font-size: 18px; }
+    #hud-left { top: 10px; left: 10px; gap: 4px; }
+    #mode-indicator, #speed-indicator, #time-indicator, #weather-indicator { font-size: 11px; padding: 4px 10px; }
 }
