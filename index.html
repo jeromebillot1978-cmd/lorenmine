@@ -2,16 +2,14 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>LorenMine - Jeu Sandbox Voxel Gratuit</title>
 
-    <!-- SEO de base -->
-    <meta name="description" content="Explorez, construisez et survivez dans LorenMine, un jeu sandbox voxel gratuit inspiré de Minecraft. Jouable directement dans le navigateur, sans installation.">
+    <meta name="description" content="Explorez, construisez et survivez dans LorenMine, un jeu sandbox voxel gratuit inspiré de Minecraft.">
     <meta name="theme-color" content="#4CAF50">
     <meta name="author" content="LorenMine">
     <meta name="robots" content="index, follow">
 
-    <!-- Open Graph (Facebook, Discord, WhatsApp, Messenger, Telegram, LinkedIn) -->
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="LorenMine">
     <meta property="og:url" content="https://lorenmine.vercel.app/">
@@ -24,14 +22,12 @@
     <meta property="og:image:height" content="630">
     <meta property="og:image:alt" content="Aperçu du jeu LorenMine avec des blocs voxel et un paysage">
 
-    <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:site" content="@lorenmine">
     <meta name="twitter:title" content="LorenMine - Jeu Sandbox Voxel Gratuit">
     <meta name="twitter:description" content="Explorez, construisez et survivez dans LorenMine, un jeu sandbox voxel gratuit inspiré de Minecraft.">
     <meta name="twitter:image" content="https://lorenmine.vercel.app/lorenmine.png">
 
-    <!-- Favicon -->
     <link rel="icon" type="image/png" href="/lorenmine.png">
     <link rel="apple-touch-icon" href="/lorenmine.png">
 
@@ -97,6 +93,21 @@
     </div>
 
     <div id="hotbar"></div>
+
+    <!-- Joystick mobile -->
+    <div id="joystick-container">
+        <div id="joystick-base"><div id="joystick-knob"></div></div>
+    </div>
+
+    <!-- Boutons mobiles -->
+    <div id="mobile-buttons">
+        <button id="mb-attack" class="mobile-btn" title="Attaquer">⚔️</button>
+        <button id="mb-place" class="mobile-btn" title="Placer">🧱</button>
+        <button id="mb-jump" class="mobile-btn" title="Sauter">⬆️</button>
+        <button id="mb-descend" class="mobile-btn" title="Descendre">⬇️</button>
+        <button id="mb-inventory" class="mobile-btn" title="Inventaire">🎒</button>
+        <button id="mb-fly" class="mobile-btn" title="Vol">✈️</button>
+    </div>
 
     <div id="inventory" class="panel">
         <h2>Inventaire</h2>
