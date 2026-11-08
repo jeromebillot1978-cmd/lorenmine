@@ -2,27 +2,57 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LorenMine — Voxel Survie</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LorenMine - Jeu Sandbox Voxel Gratuit</title>
+
+    <!-- SEO de base -->
+    <meta name="description" content="Explorez, construisez et survivez dans LorenMine, un jeu sandbox voxel gratuit inspiré de Minecraft. Jouable directement dans le navigateur, sans installation.">
+    <meta name="theme-color" content="#4CAF50">
+    <meta name="author" content="LorenMine">
+    <meta name="robots" content="index, follow">
+
+    <!-- Open Graph (Facebook, Discord, WhatsApp, Messenger, Telegram, LinkedIn) -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="LorenMine">
+    <meta property="og:url" content="https://lorenmine.vercel.app/">
+    <meta property="og:title" content="LorenMine - Jeu Sandbox Voxel Gratuit">
+    <meta property="og:description" content="Explorez, construisez et survivez dans LorenMine, un jeu sandbox voxel gratuit inspiré de Minecraft.">
+    <meta property="og:image" content="https://lorenmine.vercel.app/lorenmine.png">
+    <meta property="og:image:secure_url" content="https://lorenmine.vercel.app/lorenmine.png">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Aperçu du jeu LorenMine avec des blocs voxel et un paysage">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@lorenmine">
+    <meta name="twitter:title" content="LorenMine - Jeu Sandbox Voxel Gratuit">
+    <meta name="twitter:description" content="Explorez, construisez et survivez dans LorenMine, un jeu sandbox voxel gratuit inspiré de Minecraft.">
+    <meta name="twitter:image" content="https://lorenmine.vercel.app/lorenmine.png">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/lorenmine.png">
+    <link rel="apple-touch-icon" href="/lorenmine.png">
+
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="crosshair">+</div>
 
-    <div id="selected-block-info">
-        <span id="selected-block-name">🌍 Terre</span>
-    </div>
+    <div id="selected-block-info"><span id="selected-block-name">🌍 Terre</span></div>
 
     <div id="hud-left">
         <div id="mode-indicator">Vol ✈️</div>
         <div id="speed-indicator">Vitesse : <span id="speed-value">1</span></div>
         <div id="time-indicator">🕐 <span id="time-value">06:00</span></div>
+        <div id="weather-indicator">☀️ Clair</div>
     </div>
 
     <div id="hud-right">
         <div id="fps-counter">FPS : --</div>
         <div id="chunk-counter">Chunks : --</div>
-        <div id="animal-counter">Animaux : --</div>
+        <div id="draw-counter">Draws : --</div>
         <div id="monster-counter">Monstres : 0</div>
     </div>
 
@@ -36,17 +66,17 @@
         <div id="health-text">❤️ 20 / 20</div>
     </div>
 
-    <!-- Arme équipée -->
     <div id="weapon-hud">
         <div id="weapon-icon">🗡️</div>
         <div id="weapon-info">
             <div id="weapon-name">Épée en bois</div>
             <div id="weapon-durability-bar"><div id="weapon-durability-fill"></div></div>
         </div>
+        <div id="ammo-info" style="display:none;">🪶 <span id="ammo-count">0</span></div>
     </div>
 
     <div id="minimap-container">
-        <canvas id="minimap" width="180" height="180"></canvas>
+        <canvas id="minimap" width="160" height="160"></canvas>
         <div id="minimap-coords">0, 0</div>
     </div>
 
@@ -54,15 +84,16 @@
     <div id="particles-layer"></div>
 
     <div id="top-buttons">
-        <button id="btn-day" class="ui-btn" title="Passer au jour">☀️ Jour</button>
-        <button id="btn-night" class="ui-btn" title="Passer à la nuit">🌙 Nuit</button>
-        <button id="btn-cycle" class="ui-btn" title="Cycle auto">🔄 Cycle</button>
+        <button id="btn-day" class="ui-btn" title="Jour">☀️</button>
+        <button id="btn-night" class="ui-btn" title="Nuit">🌙</button>
+        <button id="btn-cycle" class="ui-btn" title="Cycle">🔄</button>
+        <button id="btn-weather" class="ui-btn" title="Météo">🌧️</button>
         <button id="btn-settings" class="ui-btn" title="Paramètres">⚙️</button>
     </div>
 
     <div id="help">
         <p><b>ZQSD</b> déplacement · <b>Espace/Shift</b> monter/descendre · <b>Souris</b> regarder</p>
-        <p><b>Clic G</b> attaque/casser · <b>Clic D</b> placer · <b>E</b> inventaire · <b>F</b> vol · <b>T</b> torche</p>
+        <p><b>Clic G</b> attaque/casser · <b>Clic D</b> placer/tirer · <b>E</b> inventaire · <b>F</b> vol · <b>T</b> torche</p>
     </div>
 
     <div id="hotbar"></div>
@@ -79,55 +110,17 @@
 
     <div id="settings-panel" class="panel">
         <h2>⚙️ Paramètres</h2>
-        <div class="setting-row">
-            <label>Vitesse marche</label>
-            <input type="range" id="speed-walk" min="1" max="20" step="1" value="5">
-            <span id="speed-walk-val">5</span>
-        </div>
-        <div class="setting-row">
-            <label>Vitesse vol</label>
-            <input type="range" id="speed-fly" min="1" max="20" step="1" value="14">
-            <span id="speed-fly-val">14</span>
-        </div>
-        <div class="setting-row">
-            <label>Distance d'affichage</label>
-            <input type="range" id="render-distance" min="48" max="320" step="16" value="128">
-            <span id="render-distance-val">128</span>
-        </div>
-        <div class="setting-row">
-            <label>Animaux max</label>
-            <input type="range" id="max-animals" min="0" max="40" step="2" value="16">
-            <span id="max-animals-val">16</span>
-        </div>
-        <div class="setting-row">
-            <label>Monstres max</label>
-            <input type="range" id="max-monsters" min="0" max="20" step="1" value="8">
-            <span id="max-monsters-val">8</span>
-        </div>
-        <div class="setting-row">
-            <label>Qualité graphique</label>
-            <select id="quality-select">
-                <option value="low">Basse</option>
-                <option value="medium" selected>Moyenne</option>
-                <option value="high">Haute</option>
-            </select>
-        </div>
-        <div class="setting-row checkbox-row">
-            <label>Ombres</label>
-            <input type="checkbox" id="chk-shadows" checked>
-        </div>
-        <div class="setting-row checkbox-row">
-            <label>Cycle jour/nuit</label>
-            <input type="checkbox" id="chk-cycle" checked>
-        </div>
-        <div class="setting-row checkbox-row">
-            <label>Afficher FPS</label>
-            <input type="checkbox" id="chk-fps" checked>
-        </div>
-        <div class="setting-row checkbox-row">
-            <label>Mode survie</label>
-            <input type="checkbox" id="chk-survival" checked>
-        </div>
+        <div class="setting-row"><label>Vitesse marche</label><input type="range" id="speed-walk" min="1" max="20" step="1" value="5"><span id="speed-walk-val">5</span></div>
+        <div class="setting-row"><label>Vitesse vol</label><input type="range" id="speed-fly" min="1" max="20" step="1" value="14"><span id="speed-fly-val">14</span></div>
+        <div class="setting-row"><label>Distance affichage</label><input type="range" id="render-distance" min="48" max="320" step="16" value="128"><span id="render-distance-val">128</span></div>
+        <div class="setting-row"><label>Animaux max</label><input type="range" id="max-animals" min="0" max="40" step="2" value="16"><span id="max-animals-val">16</span></div>
+        <div class="setting-row"><label>Monstres max</label><input type="range" id="max-monsters" min="0" max="20" step="1" value="8"><span id="max-monsters-val">8</span></div>
+        <div class="setting-row"><label>Qualité</label><select id="quality-select"><option value="low">Basse</option><option value="medium" selected>Moyenne</option><option value="high">Haute</option></select></div>
+        <div class="setting-row checkbox-row"><label>Ombres</label><input type="checkbox" id="chk-shadows" checked></div>
+        <div class="setting-row checkbox-row"><label>Cycle jour/nuit</label><input type="checkbox" id="chk-cycle" checked></div>
+        <div class="setting-row checkbox-row"><label>Afficher FPS</label><input type="checkbox" id="chk-fps" checked></div>
+        <div class="setting-row checkbox-row"><label>Mode survie</label><input type="checkbox" id="chk-survival" checked></div>
+        <div class="setting-row checkbox-row"><label>Météo auto</label><input type="checkbox" id="chk-weather" checked></div>
         <div class="settings-actions">
             <button id="btn-reset-world" class="ui-btn danger">🗑️ Réinitialiser</button>
             <button id="btn-close-settings" class="ui-btn">Fermer</button>
