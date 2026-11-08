@@ -1,5 +1,5 @@
 // ============================================================
-// LorenMine v7 - Bugs critiques corrigés, mobile, optimisé
+// LorenMine v8 - Déplacement fluide (sans rebond)
 // ============================================================
 'use strict';
 
@@ -10,51 +10,39 @@ const BLOCK_SIZE = 1;
 const CHUNK_SIZE = 16;
 const WORLD_RADIUS = 200;
 const TERRAIN_SEED = 1337;
-const SAVE_KEY = 'lorenmine_v7';
+const SAVE_KEY = 'lorenmine_v8';
 const GRAVITY = 25;
 const BASE_JUMP = 8;
+const MAX_FALL_SPEED = -50;
+const STEP_HEIGHT = 1.05;              // marche automatique (escaliers)
+const PLAYER_UPDATE_DT = 1 / 60;
+const COYOTE_TIME = 0.1;
 const IS_MOBILE = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || ('ontouchstart' in window);
 
 // ============================================================
 // REGISTRE BLOCS
 // ============================================================
 const BLOCK_REGISTRY = {
-    dirt:        { icon: '🌍', name: 'Terre',        colors: [0x8B5A2B, 0x8B5A2B, 0x9B6A3B, 0x7B4A1B, 0x8B5A2B, 0x8B5A2B] },
-    grass:       { icon: '🌿', name: 'Herbe',        colors: [0x6AB04C, 0x6AB04C, 0x7BC950, 0x8B5A2B, 0x6AB04C, 0x6AB04C] },
-    stone:       { icon: '🪨', name: 'Pierre',       colors: [0x808080, 0x808080, 0x909090, 0x707070, 0x808080, 0x808080] },
-    rock:        { icon: '⛰️', name: 'Roche',        colors: [0x6E6E6E, 0x6E6E6E, 0x7E7E7E, 0x5E5E5E, 0x6E6E6E, 0x6E6E6E] },
-    sand:        { icon: '🏖️', name: 'Sable',        colors: [0xE8D8A0, 0xE8D8A0, 0xF0E0B0, 0xD8C890, 0xE8D8A0, 0xE8D8A0] },
-    gravel:      { icon: '⚪', name: 'Gravier',      colors: [0xA0A0A0, 0xA0A0A0, 0xB0B0B0, 0x909090, 0xA0A0A0, 0xA0A0A0] },
-    clay:        { icon: '🧱', name: 'Argile',       colors: [0xA0908A, 0xA0908A, 0xB0A09A, 0x90807A, 0xA0908A, 0xA0908A] },
-    snow:        { icon: '❄️', name: 'Neige',        colors: [0xF0F8FF, 0xF0F8FF, 0xFFFFFF, 0xE0E8EF, 0xF0F8FF, 0xF0F8FF] },
-    ice:         { icon: '🧊', name: 'Glace',        colors: [0xA0D8F0, 0xA0D8F0, 0xB0E8FF, 0x90C8E0, 0xA0D8F0, 0xA0D8F0], transparent: true },
-    oak_wood:    { icon: '🪵', name: 'Chêne',        colors: [0x8B6B3B, 0x8B6B3B, 0x9B7B4B, 0x7B5B2B, 0x8B6B3B, 0x8B6B3B] },
-    pine_wood:   { icon: '🌲', name: 'Sapin',        colors: [0x5A3A1A, 0x5A3A1A, 0x6A4A2A, 0x4A2A0A, 0x5A3A1A, 0x5A3A1A] },
-    birch_wood:  { icon: '🌳', name: 'Bouleau',      colors: [0xD8C8A0, 0xD8C8A0, 0xE8D8B0, 0xC8B890, 0xD8C8A0, 0xD8C8A0] },
-    coal_ore:    { icon: '⬛', name: 'Charbon',      colors: [0x3A3A3A, 0x3A3A3A, 0x4A4A4A, 0x2A2A2A, 0x3A3A3A, 0x3A3A3A] },
-    iron_ore:    { icon: '⚙️', name: 'Fer',          colors: [0xB0A090, 0xB0A090, 0xC0B0A0, 0xA09080, 0xB0A090, 0xB0A090] },
-    gold_ore:    { icon: '🥇', name: 'Or',           colors: [0xFFD700, 0xFFD700, 0xFFE720, 0xEFC700, 0xFFD700, 0xFFD700] },
-    diamond_ore: { icon: '💎', name: 'Diamant',      colors: [0xA0F0FF, 0xA0F0FF, 0xB0FFFF, 0x90E0FF, 0xA0F0FF, 0xA0F0FF] },
-    obsidian:    { icon: '🟣', name: 'Obsidienne',   colors: [0x1A0A2A, 0x1A0A2A, 0x2A1A3A, 0x0A001A, 0x1A0A2A, 0x1A0A2A] },
-    bricks:      { icon: '🧱', name: 'Briques',      colors: [0xA04020, 0xA04020, 0xB05030, 0x903010, 0xA04020, 0xA04020] },
-    glass:       { icon: '🔷', name: 'Verre',        colors: [0xB0E0FF, 0xB0E0FF, 0xC0F0FF, 0xA0D0EF, 0xB0E0FF, 0xB0E0FF], transparent: true },
-    planks:      { icon: '🟫', name: 'Planches',     colors: [0xC0A060, 0xC0A060, 0xD0B070, 0xB09050, 0xC0A060, 0xC0A060] },
-    leaves:      { icon: '🍃', name: 'Feuilles',     colors: [0x2D5A2D, 0x2D5A2D, 0x3D6A3D, 0x1D4A1D, 0x2D5A2D, 0x2D5A2D], transparent: true },
-    torch:       { icon: '🔥', name: 'Torche',       colors: [0xFFA500, 0xFFA500, 0xFFFF00, 0x8B6B3B, 0xFFA500, 0xFFA500], emissive: true },
+    dirt:  { icon: '🌍', name: 'Terre',        colors: [0x8B5A2B,0x8B5A2B,0x9B6A3B,0x7B4A1B,0x8B5A2B,0x8B5A2B] },
+    grass: { icon: '🌿', name: 'Herbe',        colors: [0x6AB04C,0x6AB04C,0x7BC950,0x8B5A2B,0x6AB04C,0x6AB04C] },
+    stone: { icon: '🪨', name: 'Pierre',       colors: [0x808080,0x808080,0x909090,0x707070,0x808080,0x808080] },
+    rock:  { icon: '⛰️', name: 'Roche',        colors: [0x6E6E6E,0x6E6E6E,0x7E7E7E,0x5E5E5E,0x6E6E6E,0x6E6E6E] },
+    sand:  { icon: '🏖️', name: 'Sable',        colors: [0xE8D8A0,0xE8D8A0,0xF0E0B0,0xD8C890,0xE8D8A0,0xE8D8A0] },
+    snow:  { icon: '❄️', name: 'Neige',        colors: [0xF0F8FF,0xF0F8FF,0xFFFFFF,0xE0E8EF,0xF0F8FF,0xF0F8FF] },
+    oak_wood:  { icon: '🪵', name: 'Chêne',    colors: [0x8B6B3B,0x8B6B3B,0x9B7B4B,0x7B5B2B,0x8B6B3B,0x8B6B3B] },
+    planks:    { icon: '🟫', name: 'Planches', colors: [0xC0A060,0xC0A060,0xD0B070,0xB09050,0xC0A060,0xC0A060] },
+    glass:     { icon: '🔷', name: 'Verre',    colors: [0xB0E0FF,0xB0E0FF,0xC0F0FF,0xA0D0EF,0xB0E0FF,0xB0E0FF], transparent: true },
+    leaves:{ icon: '🍃', name: 'Feuilles',     colors: [0x2D5A2D,0x2D5A2D,0x3D6A3D,0x1D4A1D,0x2D5A2D,0x2D5A2D], transparent: true },
+    torch: { icon: '🔥', name: 'Torche',       colors: [0xFFA500,0xFFA500,0xFFFF00,0x8B6B3B,0xFFA500,0xFFA500], emissive: true },
+    bricks:{ icon: '🧱', name: 'Briques',      colors: [0xA04020,0xA04020,0xB05030,0x903010,0xA04020,0xA04020] },
 };
 const BLOCK_KEYS = Object.keys(BLOCK_REGISTRY);
 
-// ============================================================
-// ARMES
-// ============================================================
 const WEAPON_REGISTRY = {
     wood_sword:   { icon: '🗡️', name: 'Épée bois',    damage: 3, range: 2.5, cooldown: 0.5, durability: 60,  type: 'melee' },
     stone_sword:  { icon: '⚔️', name: 'Épée pierre',  damage: 5, range: 2.7, cooldown: 0.55,durability: 130, type: 'melee' },
     iron_sword:   { icon: '⚔️', name: 'Épée fer',     damage: 7, range: 3.0, cooldown: 0.6, durability: 250, type: 'melee' },
-    gold_sword:   { icon: '✨', name: 'Épée or',      damage: 6, range: 3.0, cooldown: 0.4, durability: 90,  type: 'melee' },
-    diamond_sword:{ icon: '💎', name: 'Épée diamant', damage: 9, range: 3.2, cooldown: 0.5, durability: 800, type: 'melee' },
     bow:          { icon: '🏹', name: 'Arc',          damage: 5, range: 25, cooldown: 0.9, durability: 200, type: 'ranged' },
-    crossbow:     { icon: '🎯', name: 'Arbalète',     damage: 8, range: 30, cooldown: 1.5, durability: 300, type: 'ranged' },
 };
 
 // ============================================================
@@ -89,8 +77,7 @@ const state = {
     isDead: false,
     damageCooldown: 0, attackCooldown: 0,
     animalCount: 0, monsterCount: 0,
-    savedModifications: {},   // gk -> type OR null pour bloc détruit
-    spawnQueue: [],           // [{cx,cz,dist}]
+    savedModifications: {},
 };
 
 // ============================================================
@@ -105,28 +92,30 @@ const raycaster = new THREE.Raycaster();
 raycaster.far = 8;
 const screenCenter = new THREE.Vector2(0, 0);
 
+// Joueur : hauteur = distance entre les pieds et les yeux
 const player = {
-    position: new THREE.Vector3(0.5, 40, 0.5),
+    position: new THREE.Vector3(0.5, 40, 0.5), // position = AU CENTRE DU JOUEUR
     velocity: new THREE.Vector3(),
     targetVel: new THREE.Vector3(),
     onGround: false,
-    height: 1.7, radius: 0.4,
+    coyoteTimer: 0,          // temps restant pour sauter après avoir quitté le sol
+    jumpLatch: false,        // empêche un saut multiple en maintenant Espace
+    height: 1.7,             // hauteur totale de la hitbox
+    radius: 0.3,             // rayon de la hitbox (plus fin que 0.4 → moins de blocages)
+    eyeOffset: 0.55,         // caméra à 1.7/2 + 0.55 ≈ 1.4 du centre (yeux à 1.4 au-dessus des pieds)
 };
 
 const keys = Object.create(null);
 let sharedGeometry;
 const materialCache = {};
 
-// Torches (5 max)
 const torchLights = [];
 const MAX_TORCH_LIGHTS = 5;
 
-// Projectiles
 const activeProjectiles = [];
 const MAX_PROJECTILES = 20;
 let projectileGeo, projectileMat;
 
-// Timer d'ombre (mise à jour limitée)
 let shadowDirty = true;
 let shadowTimer = 0;
 
@@ -179,7 +168,7 @@ function init() {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, IS_MOBILE ? 1.5 : 2));
     renderer.shadowMap.enabled = state.shadows;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    renderer.shadowMap.autoUpdate = false;  // ← clé : pas d'update auto
+    renderer.shadowMap.autoUpdate = false;
     document.body.appendChild(renderer.domElement);
 
     clock = new THREE.Clock();
@@ -197,6 +186,8 @@ function init() {
         player.position.set(0.5, 30, 0.5);
         camera.position.copy(player.position);
     }
+    // Placer le joueur sur le sol dès le départ (évite un premier rebond)
+    snapPlayerToGround();
 
     updateModeUI();
     updateSpeedUI();
@@ -236,7 +227,7 @@ function setupLighting() {
 }
 
 // ============================================================
-// MATÉRIAUX PARTAGÉS
+// MATÉRIAUX
 // ============================================================
 function getMaterial(type) {
     if (materialCache[type]) return materialCache[type];
@@ -306,7 +297,7 @@ function isWaterAt(x, z, h) {
 }
 
 // ============================================================
-// GÉNÉRATION CHUNK (avec mods + meshing)
+// GÉNÉRATION CHUNK
 // ============================================================
 function generateChunkData(cx, cz) {
     const blocks = {};
@@ -321,26 +312,16 @@ function generateChunkData(cx, cz) {
                 if (water && y === h) type = 'sand';
                 else if (y === h) type = h > 25 ? 'stone' : h < 5 ? 'sand' : 'grass';
                 else if (y >= h - 2) type = 'dirt';
-                else if (y < 8) type = 'rock';
                 else type = 'stone';
-                if (type === 'stone' || type === 'rock') {
-                    const oreRoll = hash2(x + y * 7, z + y * 13, TERRAIN_SEED + 1234);
-                    if (y < 5 && oreRoll < 0.004) type = 'diamond_ore';
-                    else if (y < 12 && oreRoll < 0.012) type = 'gold_ore';
-                    else if (y < 18 && oreRoll < 0.02) type = 'iron_ore';
-                    else if (y < 25 && oreRoll < 0.028) type = 'coal_ore';
-                    else if (y < 3 && oreRoll > 0.998) type = 'obsidian';
-                }
                 blocks[`${lx},${y},${lz}`] = type;
             }
             if (getBiome(x, z) === 'forest' && !water && h > 4 && h < 30) {
                 if (hash2(x, z, TERRAIN_SEED + 9999) < 0.02) {
-                    addTreeLocal(blocks, lx, h + 1, lz, hash2(x, z, 42) < 0.5 ? 'oak_wood' : 'birch_wood');
+                    addTreeLocal(blocks, lx, h + 1, lz, 'oak_wood');
                 }
             }
         }
     }
-    // Appliquer les modifications sauvegardées
     for (const [gk, type] of Object.entries(state.savedModifications)) {
         const [x, y, z] = gk.split(',').map(Number);
         if (x >= baseX && x < baseX + CHUNK_SIZE && z >= baseZ && z < baseZ + CHUNK_SIZE) {
@@ -376,7 +357,7 @@ function addTreeLocal(blocks, lx, ly, lz, woodType) {
 }
 
 // ============================================================
-// MESHING CHUNK (reconstruit à chaque modif)
+// MESHING CHUNK
 // ============================================================
 const FACE_DIRS = [
     { dir: [0, 1, 0],  corners: [[-0.5, 0.5, -0.5], [-0.5, 0.5, 0.5], [0.5, 0.5, 0.5], [0.5, 0.5, -0.5]] },
@@ -388,14 +369,12 @@ const FACE_DIRS = [
 ];
 
 function rebuildChunkMesh(chunk) {
-    // Supprimer les anciens meshes
     for (const m of chunk.meshes) {
         chunk.group.remove(m);
         if (m.geometry && m.geometry !== sharedGeometry) m.geometry.dispose();
     }
     chunk.meshes.length = 0;
 
-    // Recalculer globalBlocks
     const data = generateChunkData(chunk.cx, chunk.cz);
     chunk.globalBlocks = {};
     const byType = {};
@@ -408,7 +387,6 @@ function rebuildChunkMesh(chunk) {
         byType[type].push([lx, y, lz]);
     }
 
-    // isSolid dans le chunk
     const isSolidLocal = (gx, gy, gz) => {
         const llx = gx - chunk.cx * CHUNK_SIZE;
         const llz = gz - chunk.cz * CHUNK_SIZE;
@@ -448,22 +426,18 @@ function rebuildChunkMesh(chunk) {
         chunk.group.add(mesh);
         chunk.meshes.push(mesh);
     }
-    // Torches du chunk
     rebuildTorchLights(chunk);
     chunk.dirty = false;
     markShadowDirty();
 }
 
 function rebuildTorchLights(chunk) {
-    // Retirer les torches existantes pour ce chunk
     for (let i = torchLights.length - 1; i >= 0; i--) {
-        const l = torchLights[i];
-        if (l.userData.chunkKey === chunkKey(chunk.cx, chunk.cz)) {
-            scene.remove(l);
+        if (torchLights[i].userData.chunkKey === chunkKey(chunk.cx, chunk.cz)) {
+            scene.remove(torchLights[i]);
             torchLights.splice(i, 1);
         }
     }
-    // Compter les torches
     for (const [gk, type] of Object.entries(chunk.globalBlocks)) {
         if (type !== 'torch') continue;
         if (torchLights.length >= MAX_TORCH_LIGHTS) break;
@@ -503,26 +477,14 @@ function unloadChunk(cx, cz) {
     const key = chunkKey(cx, cz);
     const chunk = state.chunks.get(key);
     if (!chunk) return;
-    // Retirer animaux
     chunk.animals.forEach(a => { if (a.group) chunk.group.remove(a.group); });
-    // Retirer monstres (dispose leurs géometries propres)
-    chunk.monsters.forEach(m => {
-        if (m.group) {
-            chunk.group.remove(m.group);
-            m.group.traverse(o => {
-                if (o.geometry && o.geometry !== sharedGeometry && !o.isSprite) o.geometry.dispose();
-                if (o.material && o.material.map && !o.isSprite) o.material.map.dispose();
-            });
-        }
-    });
-    // Retirer torches du chunk
+    chunk.monsters.forEach(m => { if (m.group) chunk.group.remove(m.group); });
     for (let i = torchLights.length - 1; i >= 0; i--) {
         if (torchLights[i].userData.chunkKey === key) {
             scene.remove(torchLights[i]);
             torchLights.splice(i, 1);
         }
     }
-    // Dispose meshes
     chunk.meshes.forEach(m => {
         if (m.geometry && m.geometry !== sharedGeometry) m.geometry.dispose();
     });
@@ -531,12 +493,10 @@ function unloadChunk(cx, cz) {
     state.loadedChunks.delete(key);
 }
 
-// Tri par distance + chargement 1 par tick
 let lastChunkUpdate = 0;
 function updateChunks(delta) {
     lastChunkUpdate += delta;
     if (lastChunkUpdate < 0.2) {
-        // Reconstruire au max 1 chunk dirty par frame
         for (const chunk of state.chunks.values()) {
             if (chunk.dirty) { rebuildChunkMesh(chunk); break; }
         }
@@ -548,7 +508,6 @@ function updateChunks(delta) {
     const pcz = Math.floor(player.position.z / CHUNK_SIZE);
     const radius = Math.ceil(state.renderDistance / CHUNK_SIZE) + 1;
 
-    // Chercher le chunk le plus proche non chargé
     let bestDist = Infinity, bestCx = 0, bestCz = 0, found = false;
     for (let dx = -radius; dx <= radius; dx++) {
         for (let dz = -radius; dz <= radius; dz++) {
@@ -563,14 +522,12 @@ function updateChunks(delta) {
     }
     if (found) loadChunk(bestCx, bestCz);
 
-    // Décharger les chunks éloignés
     const unloadR = radius + 2;
     for (const chunk of Array.from(state.chunks.values())) {
         const dx = chunk.cx - pcx, dz = chunk.cz - pcz;
         if (dx * dx + dz * dz > unloadR * unloadR) unloadChunk(chunk.cx, chunk.cz);
     }
 
-    // Frustum culling explicite
     const camPos = camera.position;
     for (const chunk of state.chunks.values()) {
         const gx = chunk.group.position.x + CHUNK_SIZE / 2;
@@ -581,7 +538,7 @@ function updateChunks(delta) {
 }
 
 // ============================================================
-// BLOCS (modifications → rebuild chunk)
+// BLOCS
 // ============================================================
 function getBlockType(gx, y, gz) {
     const [cx, cz] = worldToChunk(gx, gz);
@@ -622,22 +579,82 @@ function isSolidAt(wx, wy, wz) {
     return getBlockType(Math.floor(wx), Math.floor(wy), Math.floor(wz)) !== null;
 }
 
+// ============================================================
+// COLLISION ROBUSTE
+// ------------------------------------------------------------
+// La hitbox du joueur est un AABB centré en X/Z et s'étendant de
+// (pos.y - height/2) à (pos.y + height/2) en Y.
+// On sépare la détection de sol de la détection de collision.
+// ============================================================
 function collidesAt(pos) {
-    const r = player.radius, h = player.height;
+    const r = player.radius;
+    const hh = player.height / 2;
     const minX = Math.floor(pos.x - r), maxX = Math.floor(pos.x + r);
-    const minY = Math.floor(pos.y - h), maxY = Math.floor(pos.y + 0.1);
+    const minY = Math.floor(pos.y - hh), maxY = Math.floor(pos.y + hh);
     const minZ = Math.floor(pos.z - r), maxZ = Math.floor(pos.z + r);
+
     for (let bx = minX; bx <= maxX; bx++) {
         for (let by = minY; by <= maxY; by++) {
             for (let bz = minZ; bz <= maxZ; bz++) {
                 if (!isSolidAt(bx, by, bz)) continue;
+                // AABB du bloc : [bx-0.5, bx+0.5] × [by-0.5, by+0.5] × [bz-0.5, bz+0.5]
                 if (pos.x + r > bx - 0.5 && pos.x - r < bx + 0.5 &&
-                    pos.y > by - 0.5 && pos.y - h < by + 0.5 &&
-                    pos.z + r > bz - 0.5 && pos.z - r < bz + 0.5) return true;
+                    pos.y + hh > by - 0.5 && pos.y - hh < by + 0.5 &&
+                    pos.z + r > bz - 0.5 && pos.z - r < bz + 0.5) {
+                    return true;
+                }
             }
         }
     }
     return false;
+}
+
+// Détecte s'il y a un sol solide juste SOUS les pieds du joueur
+// (indépendamment de la vélocité)
+function isGrounded(pos) {
+    const r = player.radius;
+    const feetY = pos.y - player.height / 2;
+    // Solide à la hauteur des pieds - epsilon
+    const testY = Math.floor(feetY - 0.05);
+    const minX = Math.floor(pos.x - r + 0.01), maxX = Math.floor(pos.x + r - 0.01);
+    const minZ = Math.floor(pos.z - r + 0.01), maxZ = Math.floor(pos.z + r - 0.01);
+    for (let bx = minX; bx <= maxX; bx++) {
+        for (let bz = minZ; bz <= maxZ; bz++) {
+            if (isSolidAt(bx, testY, bz)) return true;
+        }
+    }
+    return false;
+}
+
+// Trouve le Y du sol sous le joueur (le plus haut bloc solide à Y sous les pieds)
+function getGroundY(pos) {
+    const r = player.radius;
+    const minX = Math.floor(pos.x - r + 0.01), maxX = Math.floor(pos.x + r - 0.01);
+    const minZ = Math.floor(pos.z - r + 0.01), maxZ = Math.floor(pos.z + r - 0.01);
+    let bestY = -Infinity;
+    // On teste du haut vers le bas
+    for (let by = Math.floor(pos.y + 2); by >= Math.floor(pos.y - 5); by--) {
+        for (let bx = minX; bx <= maxX; bx++) {
+            for (let bz = minZ; bz <= maxZ; bz++) {
+                if (isSolidAt(bx, by, bz)) {
+                    // Surface supérieure du bloc : by + 0.5
+                    if (by + 0.5 > bestY) bestY = by + 0.5;
+                }
+            }
+        }
+        if (bestY !== -Infinity) break; // on a trouvé le sol le plus haut
+    }
+    return bestY;
+}
+
+function snapPlayerToGround() {
+    const groundY = getGroundY(player.position);
+    if (groundY !== -Infinity) {
+        player.position.y = groundY + player.height / 2;
+        player.velocity.y = 0;
+        player.onGround = true;
+        player.coyoteTimer = COYOTE_TIME;
+    }
 }
 
 // ============================================================
@@ -711,14 +728,6 @@ function updateWeather(delta) {
                 pos.setY(i, y);
             }
             pos.needsUpdate = true;
-            // Effet visuel : assombrir
-            if (state.weather === 'storm') {
-                ambientLight.intensity = Math.min(ambientLight.intensity, 0.15);
-                scene.fog.far = Math.min(scene.fog.far, state.renderDistance * 0.6);
-            }
-        } else {
-            // Restaurer
-            scene.fog.far = state.renderDistance;
         }
     }
 }
@@ -730,7 +739,7 @@ function updateWeatherUI() {
 }
 
 // ============================================================
-// ANIMAUX (bug des pattes corrigé)
+// ANIMAUX
 // ============================================================
 const ANIMAL_TYPES = {
     sheep: { body: 0xF5F5F5, head: 0xE8E8E8, size: 0.7, sound: 600 },
@@ -750,7 +759,6 @@ function createAnimalMesh(type) {
     head.castShadow = state.shadows;
     head.position.set(t.size * 0.85, t.size * 0.85, 0);
     group.add(head);
-    // Pattes : références stockées dans l'objet animal (pas userData du template)
     const legs = [];
     const legMat = new THREE.MeshLambertMaterial({ color: t.head });
     const legGeo = new THREE.BoxGeometry(t.size * 0.2, t.size * 0.5, t.size * 0.2);
@@ -773,7 +781,6 @@ function spawnAnimalInChunk(chunk) {
     let topY = 40;
     while (topY > 0 && !isSolidAt(gx, topY, gz)) topY--;
     if (topY < 2) return;
-    // Vérifier que le bloc au-dessus est de l'air (pas dans la roche)
     if (isSolidAt(gx, topY + 1, gz)) return;
     const { group, legs, head } = createAnimalMesh(type);
     group.position.set(lx, topY + 1, lz);
@@ -827,7 +834,6 @@ function updateAnimals(delta) {
                         } else a.direction.negate();
                     } else a.direction.negate();
                     a.group.rotation.y = Math.atan2(a.direction.x, a.direction.z);
-                    // Animation des pattes : a.legs est une ref directe, pas de clone foireux
                     for (let i = 0; i < a.legs.length; i++) {
                         a.legs[i].rotation.x = Math.sin(a.walkPhase + i * 1.5) * 0.3;
                     }
@@ -844,7 +850,7 @@ function updateAnimals(delta) {
 }
 
 // ============================================================
-// MONSTRES (chaque monstre a ses propres meshes)
+// MONSTRES
 // ============================================================
 const MONSTER_TYPES = {
     zombie:  { color: 0x4A7A4A, size: 0.9, hp: 10, damage: 3, speed: 1.5, xp: 2, sound: 180, soundType: 'sawtooth' },
@@ -883,7 +889,6 @@ function createMonsterMesh(type) {
     const armR = new THREE.Mesh(armGeo, armMat);
     armR.position.set(t.size * 0.55, t.size * 1.0, 0);
     group.add(armR);
-    // Barre de vie : canvas propre à chaque monstre
     const hpCanvas = document.createElement('canvas');
     hpCanvas.width = 64; hpCanvas.height = 8;
     const hpTex = new THREE.CanvasTexture(hpCanvas);
@@ -917,7 +922,6 @@ function spawnMonsterInChunk(chunk) {
     let topY = 40;
     while (topY > 0 && !isSolidAt(gx, topY, gz)) topY--;
     if (topY < 2) return;
-    // Éviter spawn dans la montagne
     if (isSolidAt(gx, topY + 1, gz)) return;
     const mesh = createMonsterMesh(type);
     mesh.group.position.set(lx, topY + 1, lz);
@@ -1009,9 +1013,6 @@ function updateMonsters(delta) {
                     m.group.position.y -= delta * 0.5;
                     if (m.deathTimer <= 0) {
                         chunk.group.remove(m.group);
-                        m.group.traverse(o => {
-                            if (o.geometry && o.geometry !== sharedGeometry && !o.isSprite) o.geometry.dispose();
-                        });
                         chunk.monsters.splice(i, 1);
                     }
                     continue;
@@ -1144,13 +1145,11 @@ function updateProjectiles(delta) {
             }
             if (hit) break;
         }
-        // Récupération : si pas de monstre et qu'on est au sol (bloc solide dessous)
         if (!hit && p.life < 1.5) {
             const bx = Math.floor(p.mesh.position.x);
             const by = Math.floor(p.mesh.position.y);
             const bz = Math.floor(p.mesh.position.z);
             if (isSolidAt(bx, by - 1, bz) || isSolidAt(bx, by, bz)) {
-                // Récupérer la flèche
                 state.ammo++;
                 document.getElementById('ammo-count').textContent = state.ammo;
                 hit = true;
@@ -1285,12 +1284,8 @@ function setupTouchControls() {
         jKnob.style.transform = 'translate(-50%, -50%)';
     });
 
-    // Exposer pour stepPlayer
-    window._mobileInput = {
-        getAxis: () => jVector,
-    };
+    window._mobileInput = { getAxis: () => jVector };
 
-    // Rotation caméra par swipe (si pas sur joystick)
     let touchLookId = null, lastX = 0, lastY = 0;
     renderer.domElement.addEventListener('touchstart', (e) => {
         const t = e.changedTouches[0];
@@ -1327,15 +1322,8 @@ function setupTouchControls() {
         }
     });
 
-    // Boutons mobiles
-    document.getElementById('mb-attack').addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        handleAttackAction();
-    }, { passive: false });
-    document.getElementById('mb-place').addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        handlePlaceAction();
-    }, { passive: false });
+    document.getElementById('mb-attack').addEventListener('touchstart', (e) => { e.preventDefault(); handleAttackAction(); }, { passive: false });
+    document.getElementById('mb-place').addEventListener('touchstart', (e) => { e.preventDefault(); handlePlaceAction(); }, { passive: false });
     document.getElementById('mb-jump').addEventListener('touchstart', (e) => {
         e.preventDefault();
         keys['Space'] = true;
@@ -1346,10 +1334,7 @@ function setupTouchControls() {
         keys['ShiftLeft'] = true;
         setTimeout(() => keys['ShiftLeft'] = false, 200);
     }, { passive: false });
-    document.getElementById('mb-inventory').addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        toggleInventory();
-    }, { passive: false });
+    document.getElementById('mb-inventory').addEventListener('touchstart', (e) => { e.preventDefault(); toggleInventory(); }, { passive: false });
     document.getElementById('mb-fly').addEventListener('touchstart', (e) => {
         e.preventDefault();
         state.isFlying = !state.isFlying;
@@ -1362,7 +1347,6 @@ function handleAttackAction() {
     if (state.attackCooldown > 0) return;
     const w = WEAPON_REGISTRY[state.equippedWeapon.key];
     if (w && w.type === 'ranged') { fireProjectile(); return; }
-    // Melee
     const range = w ? w.range : 3;
     const pcx = Math.floor(player.position.x / CHUNK_SIZE);
     const pcz = Math.floor(player.position.z / CHUNK_SIZE);
@@ -1389,13 +1373,11 @@ function handleAttackAction() {
     }
     if (closest) attackMonster(closest);
     else {
-        // Casser le bloc visé
         raycaster.setFromCamera(screenCenter, camera);
         const meshes = getNearbyMeshes();
         const hits = raycaster.intersectObjects(meshes, false);
         if (hits.length > 0) {
-            const h = hits[0];
-            const { gx, gy, gz } = hitToBlock(h);
+            const { gx, gy, gz } = hitToBlock(hits[0]);
             removeBlockGlobal(gx, gy, gz);
         }
     }
@@ -1413,18 +1395,16 @@ function handlePlaceAction() {
     const gy = Math.floor(point.y + n.y * 0.5);
     const gz = Math.floor(point.z + n.z * 0.5);
     if (isSolidAt(gx, gy, gz)) return;
-    const r = player.radius, hh = player.height;
+    const r = player.radius, hh = player.height / 2;
     if (gx + 0.5 > player.position.x - r && gx - 0.5 < player.position.x + r &&
-        gy + 0.5 > player.position.y - hh && gy - 0.5 < player.position.y + 0.1 &&
+        gy + 0.5 > player.position.y - hh && gy - 0.5 < player.position.y + hh &&
         gz + 0.5 > player.position.z - r && gz - 0.5 < player.position.z + r) return;
     setBlockGlobal(gx, gy, gz, state.selectedBlock);
 }
 
-// Convertit un hit Three.js en coordonnées de bloc
 function hitToBlock(hit) {
     const n = hit.face.normal.clone().applyQuaternion(hit.object.quaternion);
     const p = hit.point;
-    // Reculer d'un demi-bloc vers l'intérieur de la face
     const gx = Math.floor(p.x + n.x * 0.5 - n.x * 0.01);
     const gy = Math.floor(p.y + n.y * 0.5 - n.y * 0.01);
     const gz = Math.floor(p.z + n.z * 0.5 - n.z * 0.01);
@@ -1607,9 +1587,7 @@ function restartGame() {
     document.getElementById('game-over').classList.remove('open');
     document.getElementById('overlay').classList.remove('active');
     updateHealthUI();
-    let topY = 60;
-    while (topY > 0 && !isSolidAt(player.position.x, topY, player.position.z)) topY--;
-    player.position.y = Math.max(topY + 3, 30);
+    snapPlayerToGround();
     player.velocity.set(0, 0, 0);
     camera.position.copy(player.position);
 }
@@ -1623,7 +1601,6 @@ function updateDayNight(delta) {
     if (state.cycleAuto) {
         state.dayTime = (state.dayTime + delta / 180) % 1;
         updateTimeUI();
-        // Ombre mise à jour ~2× par seconde seulement
         shadowTimer += delta;
         if (shadowTimer > 0.5) { shadowTimer = 0; markShadowDirty(); }
     }
@@ -1646,7 +1623,7 @@ function updateDayNight(delta) {
 }
 
 // ============================================================
-// SAUVEGARDE (uniquement les modifications)
+// SAUVEGARDE
 // ============================================================
 let saveTimeout = null;
 let lastAutoSave = 0;
@@ -1654,7 +1631,7 @@ let lastAutoSave = 0;
 function saveSettings() {
     try {
         localStorage.setItem(SAVE_KEY, JSON.stringify({
-            v: 7,
+            v: 8,
             settings: {
                 walkSpeed: state.walkSpeed, flySpeed: state.flySpeed,
                 renderDistance: state.renderDistance, maxAnimals: state.maxAnimals,
@@ -1681,30 +1658,22 @@ function saveWorld() {
 
 function saveWorldNow() {
     try {
-        // Ne stocker que les modifications, taille limitée
         const mods = state.savedModifications;
-        let json = JSON.stringify({ v: 7, modifications: mods });
-        // Si trop gros (>4 Mo), réduire
+        let json = JSON.stringify({ v: 8, modifications: mods });
         if (json.length > 4_000_000) {
-            // Garder seulement les 5000 blocs les plus récents (approximation)
             const keys = Object.keys(mods);
             const kept = {};
-            for (let i = Math.max(0, keys.length - 5000); i < keys.length; i++) {
-                kept[keys[i]] = mods[keys[i]];
-            }
-            json = JSON.stringify({ v: 7, modifications: kept });
+            for (let i = Math.max(0, keys.length - 5000); i < keys.length; i++) kept[keys[i]] = mods[keys[i]];
+            json = JSON.stringify({ v: 8, modifications: kept });
         }
         localStorage.setItem(SAVE_KEY + '_world', json);
     } catch (e) {
-        // Quota dépassé : purger les plus anciennes modifs
         try {
             const keys = Object.keys(state.savedModifications);
             const kept = {};
-            for (let i = Math.max(0, keys.length - 2000); i < keys.length; i++) {
-                kept[keys[i]] = state.savedModifications[keys[i]];
-            }
+            for (let i = Math.max(0, keys.length - 2000); i < keys.length; i++) kept[keys[i]] = state.savedModifications[keys[i]];
             state.savedModifications = kept;
-            localStorage.setItem(SAVE_KEY + '_world', JSON.stringify({ v: 7, modifications: kept }));
+            localStorage.setItem(SAVE_KEY + '_world', JSON.stringify({ v: 8, modifications: kept }));
         } catch (e2) {}
     }
 }
@@ -1799,11 +1768,12 @@ function resetWorld() {
     document.getElementById('kills-value').textContent = '0';
     document.getElementById('coins-value').textContent = '0';
     closeSettings();
+    snapPlayerToGround();
     saveSettings();
 }
 
 // ============================================================
-// QUALITÉ / OMBRES
+// QUALITÉ
 // ============================================================
 function setQuality(q) {
     state.quality = q;
@@ -1828,7 +1798,6 @@ function applyShadows() {
     renderer.shadowMap.enabled = state.shadows;
     sunLight.castShadow = state.shadows;
     markShadowDirty();
-    // Appliquer sur les chunks
     for (const chunk of state.chunks.values()) {
         chunk.meshes.forEach(m => {
             m.castShadow = state.shadows;
@@ -1916,7 +1885,7 @@ function onKeyDown(e) {
     if (e.code === 'KeyT') {
         const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
         const px = Math.floor(player.position.x + forward.x * 2);
-        const py = Math.floor(player.position.y - 0.5);
+        const py = Math.floor(player.position.y - player.height / 2);
         const pz = Math.floor(player.position.z + forward.z * 2);
         if (!isSolidAt(px, py, pz) && isSolidAt(px, py - 1, pz)) setBlockGlobal(px, py, pz, 'torch');
         return;
@@ -1965,21 +1934,49 @@ function onMouseDown(e) {
 }
 
 // ============================================================
-// PHYSIQUE
+// PHYSIQUE DU JOUEUR (VERSION CORRIGÉE)
+// ------------------------------------------------------------
+// Règles :
+//  - Le joueur est une AABB de hauteur `player.height`, centrée
+//    en Y sur `player.position.y`.
+//  - Le sol est détecté via `isGrounded()` (sonde vers le bas),
+//    PAS via la vélocité.
+//  - Quand le joueur est au sol, on SNAP sa position Y au sol
+//    exact (groundY + height/2), ce qui supprime les oscillations.
+//  - Le saut n'est possible que si `coyoteTimer > 0` ET
+//    `jumpLatch === false`. Le latch empêche de redécoller en
+//    maintenant Espace.
+//  - Le step-up permet de monter 1 bloc de haut sans sauter.
 // ============================================================
 let playerUpdateAccum = 0;
-const PLAYER_UPDATE_DT = 1 / 60;
+
 function updatePlayer(delta) {
+    // Cap le delta pour éviter les téléportations si FPS chute
     playerUpdateAccum += delta;
-    while (playerUpdateAccum >= PLAYER_UPDATE_DT) {
+    let steps = 0;
+    while (playerUpdateAccum >= PLAYER_UPDATE_DT && steps < 4) {
         stepPlayer(PLAYER_UPDATE_DT);
         playerUpdateAccum -= PLAYER_UPDATE_DT;
+        steps++;
     }
+    if (steps === 4) playerUpdateAccum = 0; // évite l'accumulation infinie
     camera.position.copy(player.position);
 }
 
 function stepPlayer(dt) {
     const walkSpd = state.walkSpeed, flySpd = state.flySpeed;
+
+    // ---- 1. Détection de sol FIABLE (avant tout mouvement) ----
+    const grounded = isGrounded(player.position);
+    if (grounded) {
+        player.onGround = true;
+        player.coyoteTimer = COYOTE_TIME;
+    } else {
+        player.onGround = false;
+        player.coyoteTimer = Math.max(0, player.coyoteTimer - dt);
+    }
+
+    // ---- 2. Direction horizontale désirée ----
     const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
     const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
     forward.y = 0; right.y = 0;
@@ -1989,7 +1986,6 @@ function stepPlayer(dt) {
     if (keys['KeyS']) dir.sub(forward);
     if (keys['KeyA'] || keys['KeyQ']) dir.sub(right);
     if (keys['KeyD']) dir.add(right);
-    // Mobile joystick
     if (IS_MOBILE && window._mobileInput) {
         const axis = window._mobileInput.getAxis();
         if (Math.abs(axis.x) > 0.1 || Math.abs(axis.y) > 0.1) {
@@ -1998,43 +1994,134 @@ function stepPlayer(dt) {
         }
     }
     if (dir.lengthSq() > 0) dir.normalize();
+
     const targetSpeed = state.isFlying ? flySpd : walkSpd;
     player.targetVel.x = dir.x * targetSpeed;
     player.targetVel.z = dir.z * targetSpeed;
+
     const accel = state.isFlying ? 15 : 20;
     player.velocity.x += (player.targetVel.x - player.velocity.x) * Math.min(1, accel * dt);
     player.velocity.z += (player.targetVel.z - player.velocity.z) * Math.min(1, accel * dt);
+
+    // ---- 3. Saut (latch + coyote time) ----
     if (state.isFlying) {
         const up = (keys['Space'] ? 1 : 0) - ((keys['ShiftLeft'] || keys['ShiftRight']) ? 1 : 0);
         const targetVY = up * flySpd;
         player.velocity.y += (targetVY - player.velocity.y) * Math.min(1, 15 * dt);
     } else {
-        player.velocity.y -= GRAVITY * dt;
-        if (keys['Space'] && player.onGround) { player.velocity.y = BASE_JUMP; player.onGround = false; }
-    }
-    const newPos = player.position.clone();
-    newPos.x += player.velocity.x * dt;
-    if (collidesAt(newPos)) { newPos.x = player.position.x; player.velocity.x = 0; }
-    newPos.z += player.velocity.z * dt;
-    if (collidesAt(newPos)) { newPos.z = player.position.z; player.velocity.z = 0; }
-    newPos.y += player.velocity.y * dt;
-    if (collidesAt(newPos)) {
-        if (player.velocity.y < 0) {
-            player.onGround = true;
-            newPos.y = Math.ceil(newPos.y) + 0.001;
-            if (collidesAt(newPos)) newPos.y = player.position.y;
+        // Saut : seulement si on a le droit
+        if (keys['Space'] && !player.jumpLatch && player.coyoteTimer > 0) {
+            player.velocity.y = BASE_JUMP;
+            player.jumpLatch = true;
+            player.coyoteTimer = 0;
         }
-        player.velocity.y = 0;
-    } else if (player.velocity.y < 0 && !state.isFlying) {
-        player.onGround = false;
+        if (!keys['Space']) player.jumpLatch = false;
+
+        // Gravité
+        player.velocity.y -= GRAVITY * dt;
+        if (player.velocity.y < MAX_FALL_SPEED) player.velocity.y = MAX_FALL_SPEED;
     }
+
+    // ---- 4. Application du mouvement horizontal avec step-up ----
+    const newPos = player.position.clone();
+
+    // Test X avec step-up
+    const testX = newPos.clone();
+    testX.x += player.velocity.x * dt;
+    if (collidesAt(testX)) {
+        // Essayer de monter d'un bloc
+        const stepUp = testX.clone();
+        stepUp.y += STEP_HEIGHT;
+        if (!collidesAt(stepUp) && isGrounded(stepUp)) {
+            newPos.x = testX.x;
+            newPos.y = stepUp.y;
+        } else {
+            player.velocity.x = 0;
+        }
+    } else {
+        newPos.x = testX.x;
+    }
+
+    // Test Z avec step-up
+    const testZ = newPos.clone();
+    testZ.z += player.velocity.z * dt;
+    if (collidesAt(testZ)) {
+        const stepUp = testZ.clone();
+        stepUp.y += STEP_HEIGHT;
+        if (!collidesAt(stepUp) && isGrounded(stepUp)) {
+            newPos.z = testZ.z;
+            newPos.y = stepUp.y;
+        } else {
+            player.velocity.z = 0;
+        }
+    } else {
+        newPos.z = testZ.z;
+    }
+
+    // ---- 5. Application du mouvement vertical ----
+    const testY = newPos.clone();
+    testY.y += player.velocity.y * dt;
+
+    if (state.isFlying) {
+        if (collidesAt(testY)) {
+            player.velocity.y = 0;
+        } else {
+            newPos.y = testY.y;
+        }
+    } else {
+        // En mode marche
+        if (player.velocity.y <= 0) {
+            // Descente (ou immobile) : détecter le sol
+            const groundY = getGroundY(player.position);
+            const feetTarget = testY.y - player.height / 2;
+            if (groundY !== -Infinity && feetTarget <= groundY + 0.001) {
+                // Le joueur touche le sol : snap exact, pas de rebond
+                newPos.y = groundY + player.height / 2;
+                player.velocity.y = 0;
+                player.onGround = true;
+            } else {
+                // Chute libre
+                if (collidesAt(testY)) {
+                    player.velocity.y = 0;
+                } else {
+                    newPos.y = testY.y;
+                }
+            }
+        } else {
+            // Montée (saut) : collision par le haut
+            if (collidesAt(testY)) {
+                player.velocity.y = 0;
+            } else {
+                newPos.y = testY.y;
+            }
+        }
+    }
+
+    // ---- 6. Sécurité : chute hors monde ----
     if (newPos.y < -20) {
         let sy = 60;
         while (sy > 0 && !isSolidAt(newPos.x, sy, newPos.z)) sy--;
         newPos.y = Math.max(sy + 2, 30);
         player.velocity.set(0, 0, 0);
     }
+
+    // ---- 7. Commit ----
     player.position.copy(newPos);
+
+    // ---- 8. Snap final si au sol et non en vol ----
+    // Garantit que Y est EXACTEMENT sur le sol quand on marche.
+    if (!state.isFlying && isGrounded(player.position)) {
+        const gY = getGroundY(player.position);
+        if (gY !== -Infinity) {
+            const expected = gY + player.height / 2;
+            // On ne snap que si on est proche (évite les sauts de téléportation)
+            if (Math.abs(player.position.y - expected) < 0.5) {
+                player.position.y = expected;
+                player.velocity.y = 0;
+                player.onGround = true;
+            }
+        }
+    }
 }
 
 // ============================================================
@@ -2078,7 +2165,6 @@ function animate() {
         document.getElementById('monster-counter').textContent = 'Monstres : ' + state.monsterCount;
     }
 
-    // Ombre : update seulement si dirty
     if (shadowDirty && state.shadows) {
         renderer.shadowMap.needsUpdate = true;
         shadowDirty = false;
