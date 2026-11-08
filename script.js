@@ -1,5 +1,5 @@
 // ============================================================
-// LorenMine - Optimisé, survie, météo, armes
+// LorenMine v7 - Bugs critiques corrigés, mobile, optimisé
 // ============================================================
 'use strict';
 
@@ -10,12 +10,10 @@ const BLOCK_SIZE = 1;
 const CHUNK_SIZE = 16;
 const WORLD_RADIUS = 200;
 const TERRAIN_SEED = 1337;
-const SAVE_KEY = 'lorenmine_v6';
+const SAVE_KEY = 'lorenmine_v7';
 const GRAVITY = 25;
 const BASE_JUMP = 8;
-
-// Détection mobile
-const IS_MOBILE = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+const IS_MOBILE = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || ('ontouchstart' in window);
 
 // ============================================================
 // REGISTRE BLOCS
@@ -28,36 +26,26 @@ const BLOCK_REGISTRY = {
     sand:        { icon: '🏖️', name: 'Sable',        colors: [0xE8D8A0, 0xE8D8A0, 0xF0E0B0, 0xD8C890, 0xE8D8A0, 0xE8D8A0] },
     gravel:      { icon: '⚪', name: 'Gravier',      colors: [0xA0A0A0, 0xA0A0A0, 0xB0B0B0, 0x909090, 0xA0A0A0, 0xA0A0A0] },
     clay:        { icon: '🧱', name: 'Argile',       colors: [0xA0908A, 0xA0908A, 0xB0A09A, 0x90807A, 0xA0908A, 0xA0908A] },
-    mud:         { icon: '🟤', name: 'Boue',         colors: [0x5A4A2A, 0x5A4A2A, 0x6A5A3A, 0x4A3A1A, 0x5A4A2A, 0x5A4A2A] },
     snow:        { icon: '❄️', name: 'Neige',        colors: [0xF0F8FF, 0xF0F8FF, 0xFFFFFF, 0xE0E8EF, 0xF0F8FF, 0xF0F8FF] },
     ice:         { icon: '🧊', name: 'Glace',        colors: [0xA0D8F0, 0xA0D8F0, 0xB0E8FF, 0x90C8E0, 0xA0D8F0, 0xA0D8F0], transparent: true },
     oak_wood:    { icon: '🪵', name: 'Chêne',        colors: [0x8B6B3B, 0x8B6B3B, 0x9B7B4B, 0x7B5B2B, 0x8B6B3B, 0x8B6B3B] },
     pine_wood:   { icon: '🌲', name: 'Sapin',        colors: [0x5A3A1A, 0x5A3A1A, 0x6A4A2A, 0x4A2A0A, 0x5A3A1A, 0x5A3A1A] },
     birch_wood:  { icon: '🌳', name: 'Bouleau',      colors: [0xD8C8A0, 0xD8C8A0, 0xE8D8B0, 0xC8B890, 0xD8C8A0, 0xD8C8A0] },
-    mahogany_wood:{icon: '🌴', name: 'Acajou',       colors: [0x7B3B2B, 0x7B3B2B, 0x8B4B3B, 0x6B2B1B, 0x7B3B2B, 0x7B3B2B] },
     coal_ore:    { icon: '⬛', name: 'Charbon',      colors: [0x3A3A3A, 0x3A3A3A, 0x4A4A4A, 0x2A2A2A, 0x3A3A3A, 0x3A3A3A] },
-    copper_ore:  { icon: '🟠', name: 'Cuivre',       colors: [0xB87333, 0xB87333, 0xC88343, 0xA86323, 0xB87333, 0xB87333] },
     iron_ore:    { icon: '⚙️', name: 'Fer',          colors: [0xB0A090, 0xB0A090, 0xC0B0A0, 0xA09080, 0xB0A090, 0xB0A090] },
-    silver_ore:  { icon: '🥈', name: 'Argent',       colors: [0xC0C0C8, 0xC0C0C8, 0xD0D0D8, 0xB0B0B8, 0xC0C0C8, 0xC0C0C8] },
     gold_ore:    { icon: '🥇', name: 'Or',           colors: [0xFFD700, 0xFFD700, 0xFFE720, 0xEFC700, 0xFFD700, 0xFFD700] },
-    ruby_ore:    { icon: '🔴', name: 'Rubis',        colors: [0xD0102A, 0xD0102A, 0xE0203A, 0xC0001A, 0xD0102A, 0xD0102A] },
-    sapphire_ore:{ icon: '🔵', name: 'Saphir',       colors: [0x1020D0, 0x1020D0, 0x2030E0, 0x0010C0, 0x1020D0, 0x1020D0] },
-    emerald_ore: { icon: '💚', name: 'Émeraude',     colors: [0x10D05A, 0x10D05A, 0x20E06A, 0x00C04A, 0x10D05A, 0x10D05A] },
     diamond_ore: { icon: '💎', name: 'Diamant',      colors: [0xA0F0FF, 0xA0F0FF, 0xB0FFFF, 0x90E0FF, 0xA0F0FF, 0xA0F0FF] },
     obsidian:    { icon: '🟣', name: 'Obsidienne',   colors: [0x1A0A2A, 0x1A0A2A, 0x2A1A3A, 0x0A001A, 0x1A0A2A, 0x1A0A2A] },
     bricks:      { icon: '🧱', name: 'Briques',      colors: [0xA04020, 0xA04020, 0xB05030, 0x903010, 0xA04020, 0xA04020] },
     glass:       { icon: '🔷', name: 'Verre',        colors: [0xB0E0FF, 0xB0E0FF, 0xC0F0FF, 0xA0D0EF, 0xB0E0FF, 0xB0E0FF], transparent: true },
-    cut_stone:   { icon: '🔲', name: 'Pierre taillée',colors:[0x9A9A9A, 0x9A9A9A, 0xAAAAAA, 0x8A8A8A, 0x9A9A9A, 0x9A9A9A] },
     planks:      { icon: '🟫', name: 'Planches',     colors: [0xC0A060, 0xC0A060, 0xD0B070, 0xB09050, 0xC0A060, 0xC0A060] },
-    cobble:      { icon: '🧩', name: 'Pavés',        colors: [0x707070, 0x707070, 0x808080, 0x606060, 0x707070, 0x707070] },
-    concrete:    { icon: '⬜', name: 'Béton',         colors: [0xB0B0B0, 0xB0B0B0, 0xC0C0C0, 0xA0A0A0, 0xB0B0B0, 0xB0B0B0] },
     leaves:      { icon: '🍃', name: 'Feuilles',     colors: [0x2D5A2D, 0x2D5A2D, 0x3D6A3D, 0x1D4A1D, 0x2D5A2D, 0x2D5A2D], transparent: true },
     torch:       { icon: '🔥', name: 'Torche',       colors: [0xFFA500, 0xFFA500, 0xFFFF00, 0x8B6B3B, 0xFFA500, 0xFFA500], emissive: true },
 };
 const BLOCK_KEYS = Object.keys(BLOCK_REGISTRY);
 
 // ============================================================
-// REGISTRE ARMES
+// ARMES
 // ============================================================
 const WEAPON_REGISTRY = {
     wood_sword:   { icon: '🗡️', name: 'Épée bois',    damage: 3, range: 2.5, cooldown: 0.5, durability: 60,  type: 'melee' },
@@ -65,8 +53,8 @@ const WEAPON_REGISTRY = {
     iron_sword:   { icon: '⚔️', name: 'Épée fer',     damage: 7, range: 3.0, cooldown: 0.6, durability: 250, type: 'melee' },
     gold_sword:   { icon: '✨', name: 'Épée or',      damage: 6, range: 3.0, cooldown: 0.4, durability: 90,  type: 'melee' },
     diamond_sword:{ icon: '💎', name: 'Épée diamant', damage: 9, range: 3.2, cooldown: 0.5, durability: 800, type: 'melee' },
-    bow:          { icon: '🏹', name: 'Arc',          damage: 5, range: 25, cooldown: 0.9, durability: 200, type: 'ranged', projectile: true },
-    crossbow:     { icon: '🎯', name: 'Arbalète',     damage: 8, range: 30, cooldown: 1.5, durability: 300, type: 'ranged', projectile: true },
+    bow:          { icon: '🏹', name: 'Arc',          damage: 5, range: 25, cooldown: 0.9, durability: 200, type: 'ranged' },
+    crossbow:     { icon: '🎯', name: 'Arbalète',     damage: 8, range: 30, cooldown: 1.5, durability: 300, type: 'ranged' },
 };
 
 // ============================================================
@@ -81,42 +69,29 @@ const state = {
     isSettingsOpen: false,
     isPointerLocked: false,
     survivalEnabled: true,
-    walkSpeed: 5,
-    flySpeed: 14,
-    renderDistance: 128,
-    maxAnimals: 16,
-    maxMonsters: 8,
-    quality: 'medium',
-    shadows: true,
+    walkSpeed: 5, flySpeed: 14,
+    renderDistance: IS_MOBILE ? 64 : 128,
+    maxAnimals: IS_MOBILE ? 8 : 16,
+    maxMonsters: IS_MOBILE ? 4 : 8,
+    quality: IS_MOBILE ? 'low' : 'medium',
+    shadows: !IS_MOBILE,
     cycleAuto: true,
     showFPS: true,
     weatherAuto: true,
     dayTime: 0.25,
-    weather: 'clear', // clear, rain, storm, fog, snow
+    weather: 'clear',
     weatherTimer: 60,
     chunks: new Map(),
     loadedChunks: new Set(),
     exploredChunks: new Set(),
-    health: 20,
-    maxHealth: 20,
-    kills: 0,
-    coins: 0,
+    health: 20, maxHealth: 20,
+    kills: 0, coins: 0,
     isDead: false,
-    damageCooldown: 0,
-    attackCooldown: 0,
-    animalCount: 0,
-    monsterCount: 0,
-    savedModifications: {},
+    damageCooldown: 0, attackCooldown: 0,
+    animalCount: 0, monsterCount: 0,
+    savedModifications: {},   // gk -> type OR null pour bloc détruit
+    spawnQueue: [],           // [{cx,cz,dist}]
 };
-
-// Application mobile auto
-if (IS_MOBILE) {
-    state.renderDistance = 64;
-    state.shadows = false;
-    state.maxAnimals = 8;
-    state.maxMonsters = 4;
-    state.quality = 'low';
-}
 
 // ============================================================
 // THREE.JS
@@ -135,22 +110,25 @@ const player = {
     velocity: new THREE.Vector3(),
     targetVel: new THREE.Vector3(),
     onGround: false,
-    height: 1.7,
-    radius: 0.4,
+    height: 1.7, radius: 0.4,
 };
 
 const keys = Object.create(null);
 let sharedGeometry;
 const materialCache = {};
 
-// Lumières torches (max 2)
+// Torches (5 max)
 const torchLights = [];
-const MAX_TORCH_LIGHTS = 2;
+const MAX_TORCH_LIGHTS = 5;
 
-// Pools
-const projectilePool = [];
-const MAX_PROJECTILES = 20;
+// Projectiles
 const activeProjectiles = [];
+const MAX_PROJECTILES = 20;
+let projectileGeo, projectileMat;
+
+// Timer d'ombre (mise à jour limitée)
+let shadowDirty = true;
+let shadowTimer = 0;
 
 // ============================================================
 // AUDIO
@@ -177,6 +155,7 @@ function playSound(freq, duration = 0.08, type = 'sine', vol = 0.03) {
 function chunkKey(cx, cz) { return cx + ',' + cz; }
 function blockKey(x, y, z) { return x + ',' + y + ',' + z; }
 function worldToChunk(x, z) { return [Math.floor(x / CHUNK_SIZE), Math.floor(z / CHUNK_SIZE)]; }
+function markShadowDirty() { shadowDirty = true; }
 
 // ============================================================
 // INIT
@@ -198,18 +177,21 @@ function init() {
     renderer = new THREE.WebGLRenderer({ antialias: !IS_MOBILE, powerPreference: 'high-performance' });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, IS_MOBILE ? 1.5 : 2));
-    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.enabled = state.shadows;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    renderer.shadowMap.autoUpdate = false;
+    renderer.shadowMap.autoUpdate = false;  // ← clé : pas d'update auto
     document.body.appendChild(renderer.domElement);
 
     clock = new THREE.Clock();
     sharedGeometry = new THREE.BoxGeometry(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+    projectileGeo = new THREE.SphereGeometry(0.1, 6, 6);
+    projectileMat = new THREE.MeshBasicMaterial({ color: 0xDDDDDD });
 
     setupLighting();
     setupUI();
     setupWeather();
     setupEventListeners();
+    if (IS_MOBILE) setupTouchControls();
 
     if (!loadSave()) {
         player.position.set(0.5, 30, 0.5);
@@ -224,6 +206,7 @@ function init() {
     updateTimeUI();
     updateWeaponUI();
     updateWeatherUI();
+    markShadowDirty();
 
     animate();
 }
@@ -238,7 +221,7 @@ function setupLighting() {
     scene.add(hemiLight);
 
     sunLight = new THREE.DirectionalLight(0xffffff, 1.0);
-    sunLight.castShadow = true;
+    sunLight.castShadow = state.shadows;
     sunLight.shadow.mapSize.width = shadowMapSize;
     sunLight.shadow.mapSize.height = shadowMapSize;
     sunLight.shadow.camera.near = 0.5;
@@ -253,7 +236,7 @@ function setupLighting() {
 }
 
 // ============================================================
-// MATÉRIAUX
+// MATÉRIAUX PARTAGÉS
 // ============================================================
 function getMaterial(type) {
     if (materialCache[type]) return materialCache[type];
@@ -323,12 +306,11 @@ function isWaterAt(x, z, h) {
 }
 
 // ============================================================
-// GÉNÉRATION CHUNK (avec meshing)
+// GÉNÉRATION CHUNK (avec mods + meshing)
 // ============================================================
 function generateChunkData(cx, cz) {
     const blocks = {};
-    const baseX = cx * CHUNK_SIZE;
-    const baseZ = cz * CHUNK_SIZE;
+    const baseX = cx * CHUNK_SIZE, baseZ = cz * CHUNK_SIZE;
     for (let lx = 0; lx < CHUNK_SIZE; lx++) {
         for (let lz = 0; lz < CHUNK_SIZE; lz++) {
             const x = baseX + lx, z = baseZ + lz;
@@ -344,11 +326,8 @@ function generateChunkData(cx, cz) {
                 if (type === 'stone' || type === 'rock') {
                     const oreRoll = hash2(x + y * 7, z + y * 13, TERRAIN_SEED + 1234);
                     if (y < 5 && oreRoll < 0.004) type = 'diamond_ore';
-                    else if (y < 8 && oreRoll < 0.008) type = 'emerald_ore';
                     else if (y < 12 && oreRoll < 0.012) type = 'gold_ore';
-                    else if (y < 15 && oreRoll < 0.016) type = 'silver_ore';
                     else if (y < 18 && oreRoll < 0.02) type = 'iron_ore';
-                    else if (y < 22 && oreRoll < 0.024) type = 'copper_ore';
                     else if (y < 25 && oreRoll < 0.028) type = 'coal_ore';
                     else if (y < 3 && oreRoll > 0.998) type = 'obsidian';
                 }
@@ -356,18 +335,18 @@ function generateChunkData(cx, cz) {
             }
             if (getBiome(x, z) === 'forest' && !water && h > 4 && h < 30) {
                 if (hash2(x, z, TERRAIN_SEED + 9999) < 0.02) {
-                    const woodType = hash2(x, z, 42) < 0.5 ? 'oak_wood' : 'birch_wood';
-                    addTreeLocal(blocks, lx, h + 1, lz, woodType);
+                    addTreeLocal(blocks, lx, h + 1, lz, hash2(x, z, 42) < 0.5 ? 'oak_wood' : 'birch_wood');
                 }
             }
         }
     }
-    if (state.savedModifications) {
-        for (const [gk, type] of Object.entries(state.savedModifications)) {
-            const [x, y, z] = gk.split(',').map(Number);
-            if (x >= baseX && x < baseX + CHUNK_SIZE && z >= baseZ && z < baseZ + CHUNK_SIZE) {
-                blocks[`${x - baseX},${y},${z - baseZ}`] = type;
-            }
+    // Appliquer les modifications sauvegardées
+    for (const [gk, type] of Object.entries(state.savedModifications)) {
+        const [x, y, z] = gk.split(',').map(Number);
+        if (x >= baseX && x < baseX + CHUNK_SIZE && z >= baseZ && z < baseZ + CHUNK_SIZE) {
+            const lk = `${x - baseX},${y},${z - baseZ}`;
+            if (type === null) delete blocks[lk];
+            else blocks[lk] = type;
         }
     }
     return blocks;
@@ -397,65 +376,56 @@ function addTreeLocal(blocks, lx, ly, lz, woodType) {
 }
 
 // ============================================================
-// CHARGEMENT CHUNK AVEC MESHING PAR MATÉRIAU
+// MESHING CHUNK (reconstruit à chaque modif)
 // ============================================================
-// Cache des faces exposées par type
 const FACE_DIRS = [
-    { dir: [0, 1, 0], corners: [[-0.5, 0.5, -0.5], [-0.5, 0.5, 0.5], [0.5, 0.5, 0.5], [0.5, 0.5, -0.5]] },
+    { dir: [0, 1, 0],  corners: [[-0.5, 0.5, -0.5], [-0.5, 0.5, 0.5], [0.5, 0.5, 0.5], [0.5, 0.5, -0.5]] },
     { dir: [0, -1, 0], corners: [[-0.5, -0.5, 0.5], [-0.5, -0.5, -0.5], [0.5, -0.5, -0.5], [0.5, -0.5, 0.5]] },
-    { dir: [1, 0, 0], corners: [[0.5, -0.5, 0.5], [0.5, -0.5, -0.5], [0.5, 0.5, -0.5], [0.5, 0.5, 0.5]] },
+    { dir: [1, 0, 0],  corners: [[0.5, -0.5, 0.5], [0.5, -0.5, -0.5], [0.5, 0.5, -0.5], [0.5, 0.5, 0.5]] },
     { dir: [-1, 0, 0], corners: [[-0.5, -0.5, -0.5], [-0.5, -0.5, 0.5], [-0.5, 0.5, 0.5], [-0.5, 0.5, -0.5]] },
-    { dir: [0, 0, 1], corners: [[-0.5, -0.5, 0.5], [0.5, -0.5, 0.5], [0.5, 0.5, 0.5], [-0.5, 0.5, 0.5]] },
+    { dir: [0, 0, 1],  corners: [[-0.5, -0.5, 0.5], [0.5, -0.5, 0.5], [0.5, 0.5, 0.5], [-0.5, 0.5, 0.5]] },
     { dir: [0, 0, -1], corners: [[0.5, -0.5, -0.5], [-0.5, -0.5, -0.5], [-0.5, 0.5, -0.5], [0.5, 0.5, -0.5]] },
 ];
 
-function loadChunk(cx, cz) {
-    const key = chunkKey(cx, cz);
-    if (state.loadedChunks.has(key)) return;
+function rebuildChunkMesh(chunk) {
+    // Supprimer les anciens meshes
+    for (const m of chunk.meshes) {
+        chunk.group.remove(m);
+        if (m.geometry && m.geometry !== sharedGeometry) m.geometry.dispose();
+    }
+    chunk.meshes.length = 0;
 
-    const data = generateChunkData(cx, cz);
-    const group = new THREE.Group();
-    group.position.set(cx * CHUNK_SIZE, 0, cz * CHUNK_SIZE);
-
-    const meshes = [];
-    const blockMap = {}; // gk global -> mesh individuel pour blocs placés
-    const globalBlocks = {};
-
-    // Regrouper les blocs par type
+    // Recalculer globalBlocks
+    const data = generateChunkData(chunk.cx, chunk.cz);
+    chunk.globalBlocks = {};
     const byType = {};
     for (const [lk, type] of Object.entries(data)) {
-        if (!byType[type]) byType[type] = [];
-        byType[type].push(lk);
         const [lx, y, lz] = lk.split(',').map(Number);
-        globalBlocks[blockKey(cx * CHUNK_SIZE + lx, y, cz * CHUNK_SIZE + lz)] = type;
+        const gx = chunk.cx * CHUNK_SIZE + lx;
+        const gz = chunk.cz * CHUNK_SIZE + lz;
+        chunk.globalBlocks[blockKey(gx, y, gz)] = type;
+        if (!byType[type]) byType[type] = [];
+        byType[type].push([lx, y, lz]);
     }
 
-    // Récupérer une fonction isSolid locale rapide (sans passer par chunks)
+    // isSolid dans le chunk
     const isSolidLocal = (gx, gy, gz) => {
-        // Dans le même chunk
-        const llx = gx - cx * CHUNK_SIZE;
-        const llz = gz - cz * CHUNK_SIZE;
+        const llx = gx - chunk.cx * CHUNK_SIZE;
+        const llz = gz - chunk.cz * CHUNK_SIZE;
         if (llx >= 0 && llx < CHUNK_SIZE && llz >= 0 && llz < CHUNK_SIZE) {
-            return !!data[`${llx},${gy},${llz}`];
+            return !!chunk.globalBlocks[blockKey(gx, gy, gz)];
         }
-        // Hors chunk : on ne peut pas savoir sans charger les voisins
         return false;
     };
 
     for (const [type, list] of Object.entries(byType)) {
-        const def = BLOCK_REGISTRY[type];
-        const positions = [];
-        const normals = [];
-        const indices = [];
+        const positions = [], normals = [], indices = [];
         let vertexCount = 0;
-
-        for (const lk of list) {
-            const [lx, y, lz] = lk.split(',').map(Number);
-            const gx = cx * CHUNK_SIZE + lx;
-            const gz = cz * CHUNK_SIZE + lz;
+        for (const [lx, y, lz] of list) {
+            const gx = chunk.cx * CHUNK_SIZE + lx;
+            const gz = chunk.cz * CHUNK_SIZE + lz;
             for (const face of FACE_DIRS) {
-                const nx = gx + face.dir[0], ny = y + face.dir[1], nz = gz + face.dir[2];
-                if (isSolidLocal(nx, ny, nz)) continue;
+                if (isSolidLocal(gx + face.dir[0], y + face.dir[1], gz + face.dir[2])) continue;
                 for (const c of face.corners) {
                     positions.push(lx + c[0], y + c[1], lz + c[2]);
                     normals.push(face.dir[0], face.dir[1], face.dir[2]);
@@ -465,40 +435,94 @@ function loadChunk(cx, cz) {
                 vertexCount += 4;
             }
         }
-
         if (positions.length === 0) continue;
-
-        const geometry = new THREE.BufferGeometry();
-        geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-        geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
-        geometry.setIndex(indices);
-        geometry.computeBoundingSphere();
-
-        const mesh = new THREE.Mesh(geometry, getMaterial(type));
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+        geo.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+        geo.setIndex(indices);
+        geo.computeBoundingSphere();
+        const def = BLOCK_REGISTRY[type];
+        const mesh = new THREE.Mesh(geo, getMaterial(type));
         mesh.castShadow = state.shadows && !def.transparent;
         mesh.receiveShadow = state.shadows;
-        mesh.frustumCulled = true;
-        group.add(mesh);
-        meshes.push(mesh);
+        chunk.group.add(mesh);
+        chunk.meshes.push(mesh);
     }
+    // Torches du chunk
+    rebuildTorchLights(chunk);
+    chunk.dirty = false;
+    markShadowDirty();
+}
 
+function rebuildTorchLights(chunk) {
+    // Retirer les torches existantes pour ce chunk
+    for (let i = torchLights.length - 1; i >= 0; i--) {
+        const l = torchLights[i];
+        if (l.userData.chunkKey === chunkKey(chunk.cx, chunk.cz)) {
+            scene.remove(l);
+            torchLights.splice(i, 1);
+        }
+    }
+    // Compter les torches
+    for (const [gk, type] of Object.entries(chunk.globalBlocks)) {
+        if (type !== 'torch') continue;
+        if (torchLights.length >= MAX_TORCH_LIGHTS) break;
+        const [gx, y, gz] = gk.split(',').map(Number);
+        const light = new THREE.PointLight(0xFFAA00, 1.2, 8, 2);
+        light.position.set(gx + 0.5, y + 0.5, gz + 0.5);
+        light.castShadow = false;
+        light.userData.chunkKey = chunkKey(chunk.cx, chunk.cz);
+        scene.add(light);
+        torchLights.push(light);
+    }
+}
+
+// ============================================================
+// CHUNKS
+// ============================================================
+function loadChunk(cx, cz) {
+    const key = chunkKey(cx, cz);
+    if (state.loadedChunks.has(key)) return;
+    const group = new THREE.Group();
+    group.position.set(cx * CHUNK_SIZE, 0, cz * CHUNK_SIZE);
     scene.add(group);
-    state.chunks.set(key, {
-        cx, cz, group, meshes, blockMap, globalBlocks,
-        animals: [], monsters: [], animalCountdown: 5, monsterCountdown: 10,
-        loaded: true
-    });
+    const chunk = {
+        cx, cz, group,
+        meshes: [], globalBlocks: {},
+        animals: [], monsters: [],
+        animalCountdown: 5, monsterCountdown: 10,
+        loaded: true, dirty: true,
+    };
+    state.chunks.set(key, chunk);
     state.loadedChunks.add(key);
     state.exploredChunks.add(key);
+    rebuildChunkMesh(chunk);
 }
 
 function unloadChunk(cx, cz) {
     const key = chunkKey(cx, cz);
     const chunk = state.chunks.get(key);
     if (!chunk) return;
+    // Retirer animaux
     chunk.animals.forEach(a => { if (a.group) chunk.group.remove(a.group); });
-    chunk.monsters.forEach(m => { if (m.group) chunk.group.remove(m.group); });
-    // Dispose les géométries de chunk (matériaux partagés → NON dispose)
+    // Retirer monstres (dispose leurs géometries propres)
+    chunk.monsters.forEach(m => {
+        if (m.group) {
+            chunk.group.remove(m.group);
+            m.group.traverse(o => {
+                if (o.geometry && o.geometry !== sharedGeometry && !o.isSprite) o.geometry.dispose();
+                if (o.material && o.material.map && !o.isSprite) o.material.map.dispose();
+            });
+        }
+    });
+    // Retirer torches du chunk
+    for (let i = torchLights.length - 1; i >= 0; i--) {
+        if (torchLights[i].userData.chunkKey === key) {
+            scene.remove(torchLights[i]);
+            torchLights.splice(i, 1);
+        }
+    }
+    // Dispose meshes
     chunk.meshes.forEach(m => {
         if (m.geometry && m.geometry !== sharedGeometry) m.geometry.dispose();
     });
@@ -507,19 +531,25 @@ function unloadChunk(cx, cz) {
     state.loadedChunks.delete(key);
 }
 
+// Tri par distance + chargement 1 par tick
 let lastChunkUpdate = 0;
 function updateChunks(delta) {
     lastChunkUpdate += delta;
-    if (lastChunkUpdate < 0.2) return;
+    if (lastChunkUpdate < 0.2) {
+        // Reconstruire au max 1 chunk dirty par frame
+        for (const chunk of state.chunks.values()) {
+            if (chunk.dirty) { rebuildChunkMesh(chunk); break; }
+        }
+        return;
+    }
     lastChunkUpdate = 0;
 
     const pcx = Math.floor(player.position.x / CHUNK_SIZE);
     const pcz = Math.floor(player.position.z / CHUNK_SIZE);
     const radius = Math.ceil(state.renderDistance / CHUNK_SIZE) + 1;
 
-    // Charger UN chunk par tick
-    let loaded = false;
-    outer:
+    // Chercher le chunk le plus proche non chargé
+    let bestDist = Infinity, bestCx = 0, bestCz = 0, found = false;
     for (let dx = -radius; dx <= radius; dx++) {
         for (let dz = -radius; dz <= radius; dz++) {
             const cx = pcx + dx, cz = pcz + dz;
@@ -527,33 +557,31 @@ function updateChunks(delta) {
             if (Math.abs(cz) > WORLD_RADIUS / CHUNK_SIZE) continue;
             const d2 = dx * dx + dz * dz;
             if (d2 > radius * radius) continue;
-            if (!state.loadedChunks.has(chunkKey(cx, cz))) {
-                loadChunk(cx, cz);
-                loaded = true;
-                if (loaded) break outer;
-            }
+            if (state.loadedChunks.has(chunkKey(cx, cz))) continue;
+            if (d2 < bestDist) { bestDist = d2; bestCx = cx; bestCz = cz; found = true; }
         }
     }
+    if (found) loadChunk(bestCx, bestCz);
 
+    // Décharger les chunks éloignés
     const unloadR = radius + 2;
     for (const chunk of Array.from(state.chunks.values())) {
         const dx = chunk.cx - pcx, dz = chunk.cz - pcz;
         if (dx * dx + dz * dz > unloadR * unloadR) unloadChunk(chunk.cx, chunk.cz);
     }
 
-    // Frustum culling explicite sur les groupes
+    // Frustum culling explicite
     const camPos = camera.position;
     for (const chunk of state.chunks.values()) {
-        const gx = chunk.group.position.x;
-        const gz = chunk.group.position.z;
-        const ddx = gx + CHUNK_SIZE / 2 - camPos.x;
-        const ddz = gz + CHUNK_SIZE / 2 - camPos.z;
+        const gx = chunk.group.position.x + CHUNK_SIZE / 2;
+        const gz = chunk.group.position.z + CHUNK_SIZE / 2;
+        const ddx = gx - camPos.x, ddz = gz - camPos.z;
         chunk.group.visible = (ddx * ddx + ddz * ddz) < (state.renderDistance * state.renderDistance);
     }
 }
 
 // ============================================================
-// BLOCS
+// BLOCS (modifications → rebuild chunk)
 // ============================================================
 function getBlockType(gx, y, gz) {
     const [cx, cz] = worldToChunk(gx, gz);
@@ -569,17 +597,8 @@ function setBlockGlobal(gx, y, gz, type) {
     const gk = blockKey(gx, y, gz);
     if (chunk.globalBlocks[gk]) return false;
     chunk.globalBlocks[gk] = type;
-    const lx = gx - cx * CHUNK_SIZE, lz = gz - cz * CHUNK_SIZE;
-    const m = new THREE.Mesh(sharedGeometry, getMaterial(type));
-    m.position.set(lx, y, lz);
-    m.castShadow = state.shadows && !BLOCK_REGISTRY[type].transparent;
-    m.receiveShadow = state.shadows;
-    m.frustumCulled = true;
-    m.userData = { gx, y, gz, type };
-    chunk.group.add(m);
-    chunk.meshes.push(m);
-    chunk.blockMap[gk] = m;
-    if (type === 'torch') addTorchLight(gx, y, gz);
+    state.savedModifications[gk] = type;
+    chunk.dirty = true;
     saveWorld();
     return true;
 }
@@ -592,15 +611,9 @@ function removeBlockGlobal(gx, y, gz) {
     if (!chunk.globalBlocks[gk]) return false;
     const removedType = chunk.globalBlocks[gk];
     delete chunk.globalBlocks[gk];
-    const mesh = chunk.blockMap[gk];
-    if (mesh) {
-        chunk.group.remove(mesh);
-        const idx = chunk.meshes.indexOf(mesh);
-        if (idx > -1) chunk.meshes.splice(idx, 1);
-        delete chunk.blockMap[gk];
-    }
-    if (removedType === 'torch') removeTorchLight(gx, y, gz);
+    state.savedModifications[gk] = null;
     spawnBlockParticles(gx + 0.5, y + 0.5, gz + 0.5, removedType);
+    chunk.dirty = true;
     saveWorld();
     return true;
 }
@@ -609,7 +622,6 @@ function isSolidAt(wx, wy, wz) {
     return getBlockType(Math.floor(wx), Math.floor(wy), Math.floor(wz)) !== null;
 }
 
-// Collision rapide : lookup direct + test AABB
 function collidesAt(pos) {
     const r = player.radius, h = player.height;
     const minX = Math.floor(pos.x - r), maxX = Math.floor(pos.x + r);
@@ -629,34 +641,9 @@ function collidesAt(pos) {
 }
 
 // ============================================================
-// TORCHES
+// PARTICULES
 // ============================================================
-function addTorchLight(x, y, z) {
-    if (torchLights.length >= MAX_TORCH_LIGHTS) {
-        scene.remove(torchLights.shift());
-    }
-    const light = new THREE.PointLight(0xFFAA00, 1.2, 8, 2);
-    light.position.set(x + 0.5, y + 0.5, z + 0.5);
-    light.castShadow = false;
-    scene.add(light);
-    torchLights.push(light);
-}
-function removeTorchLight(x, y, z) {
-    for (let i = torchLights.length - 1; i >= 0; i--) {
-        const l = torchLights[i];
-        if (Math.abs(l.position.x - (x + 0.5)) < 0.1 &&
-            Math.abs(l.position.y - (y + 0.5)) < 0.1 &&
-            Math.abs(l.position.z - (z + 0.5)) < 0.1) {
-            scene.remove(l);
-            torchLights.splice(i, 1);
-        }
-    }
-}
-
-// ============================================================
-// PARTICULES DOM (pool réutilisé)
-// ============================================================
-const particlePool2 = [];
+const particlePool = [];
 function spawnBlockParticles(x, y, z, blockType) {
     const def = BLOCK_REGISTRY[blockType];
     if (!def) return;
@@ -664,7 +651,7 @@ function spawnBlockParticles(x, y, z, blockType) {
     const layer = document.getElementById('particles-layer');
     for (let i = 0; i < 5; i++) {
         let p;
-        if (particlePool2.length > 0) p = particlePool2.pop();
+        if (particlePool.length > 0) p = particlePool.pop();
         else { p = document.createElement('div'); p.className = 'particle'; }
         p.style.background = color;
         const angle = Math.random() * Math.PI * 2;
@@ -677,7 +664,7 @@ function spawnBlockParticles(x, y, z, blockType) {
         void p.offsetWidth;
         p.style.animation = 'particleBurst 0.8s ease-out forwards';
         layer.appendChild(p);
-        setTimeout(() => { p.remove(); particlePool2.push(p); }, 850);
+        setTimeout(() => { p.remove(); particlePool.push(p); }, 850);
     }
 }
 
@@ -686,7 +673,7 @@ function spawnBlockParticles(x, y, z, blockType) {
 // ============================================================
 function setupWeather() {
     const geo = new THREE.BufferGeometry();
-    const count = 800;
+    const count = IS_MOBILE ? 400 : 800;
     const positions = new Float32Array(count * 3);
     for (let i = 0; i < count; i++) {
         positions[i * 3] = (Math.random() - 0.5) * 60;
@@ -694,7 +681,7 @@ function setupWeather() {
         positions[i * 3 + 2] = (Math.random() - 0.5) * 60;
     }
     geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    const mat = new THREE.PointsMaterial({ color: 0xAADDFF, size: 0.15, transparent: true, opacity: 0.6 });
+    const mat = new THREE.PointsMaterial({ color: 0xAADDFF, size: 0.15, transparent: true, opacity: 0.6, depthWrite: false });
     rainPoints = new THREE.Points(geo, mat);
     rainPoints.visible = false;
     scene.add(rainPoints);
@@ -707,7 +694,7 @@ function updateWeather(delta) {
             state.weatherTimer = 60 + Math.random() * 120;
             const r = Math.random();
             if (r < 0.6) state.weather = 'clear';
-            else if (r < 0.85) state.weather = 'rain';
+            else if (r < 0.9) state.weather = 'rain';
             else state.weather = 'storm';
             updateWeatherUI();
         }
@@ -724,22 +711,26 @@ function updateWeather(delta) {
                 pos.setY(i, y);
             }
             pos.needsUpdate = true;
+            // Effet visuel : assombrir
+            if (state.weather === 'storm') {
+                ambientLight.intensity = Math.min(ambientLight.intensity, 0.15);
+                scene.fog.far = Math.min(scene.fog.far, state.renderDistance * 0.6);
+            }
+        } else {
+            // Restaurer
+            scene.fog.far = state.renderDistance;
         }
-    }
-    // Ajuster luminosité
-    if (state.weather === 'storm') {
-        ambientLight.intensity *= 0.7;
     }
 }
 
 function updateWeatherUI() {
     const el = document.getElementById('weather-indicator');
-    const icons = { clear: '☀️ Clair', rain: '🌧️ Pluie', storm: '⛈️ Orage', fog: '🌫️ Brouillard' };
+    const icons = { clear: '☀️ Clair', rain: '🌧️ Pluie', storm: '⛈️ Orage' };
     el.textContent = icons[state.weather] || '☀️';
 }
 
 // ============================================================
-// ANIMAUX
+// ANIMAUX (bug des pattes corrigé)
 // ============================================================
 const ANIMAL_TYPES = {
     sheep: { body: 0xF5F5F5, head: 0xE8E8E8, size: 0.7, sound: 600 },
@@ -747,10 +738,8 @@ const ANIMAL_TYPES = {
     pig:   { body: 0xF5A3A3, head: 0xF08080, size: 0.7, sound: 350 },
     chicken:{ body: 0xFFFFFF, head: 0xFFFFAA, size: 0.5, sound: 900 },
 };
-let animalTemplateCache = {};
 
-function getAnimalTemplate(type) {
-    if (animalTemplateCache[type]) return animalTemplateCache[type];
+function createAnimalMesh(type) {
     const t = ANIMAL_TYPES[type];
     const group = new THREE.Group();
     const body = new THREE.Mesh(new THREE.BoxGeometry(t.size * 1.4, t.size * 0.8, t.size * 0.8), new THREE.MeshLambertMaterial({ color: t.body }));
@@ -761,11 +750,10 @@ function getAnimalTemplate(type) {
     head.castShadow = state.shadows;
     head.position.set(t.size * 0.85, t.size * 0.85, 0);
     group.add(head);
-    group.userData.head = head;
-    // Pattes (4)
+    // Pattes : références stockées dans l'objet animal (pas userData du template)
+    const legs = [];
     const legMat = new THREE.MeshLambertMaterial({ color: t.head });
     const legGeo = new THREE.BoxGeometry(t.size * 0.2, t.size * 0.5, t.size * 0.2);
-    const legs = [];
     for (const [x, z] of [[-0.5, -0.3], [-0.5, 0.3], [0.5, -0.3], [0.5, 0.3]]) {
         const leg = new THREE.Mesh(legGeo, legMat);
         leg.position.set(x * t.size, t.size * 0.25, z * t.size);
@@ -773,10 +761,7 @@ function getAnimalTemplate(type) {
         group.add(leg);
         legs.push(leg);
     }
-    group.userData.legs = legs;
-    group.visible = false;
-    animalTemplateCache[type] = group;
-    return group;
+    return { group, legs, head };
 }
 
 function spawnAnimalInChunk(chunk) {
@@ -788,12 +773,14 @@ function spawnAnimalInChunk(chunk) {
     let topY = 40;
     while (topY > 0 && !isSolidAt(gx, topY, gz)) topY--;
     if (topY < 2) return;
-    const group = getAnimalTemplate(type).clone();
-    group.visible = true;
+    // Vérifier que le bloc au-dessus est de l'air (pas dans la roche)
+    if (isSolidAt(gx, topY + 1, gz)) return;
+    const { group, legs, head } = createAnimalMesh(type);
     group.position.set(lx, topY + 1, lz);
     chunk.group.add(group);
     chunk.animals.push({
-        group, type, state: 'idle',
+        group, legs, head, type,
+        state: 'idle',
         timer: 1 + Math.random() * 3,
         direction: new THREE.Vector3(),
         speed: 1.2, soundTimer: 5 + Math.random() * 10, walkPhase: 0,
@@ -830,8 +817,7 @@ function updateAnimals(delta) {
                     const step = a.speed * delta;
                     const nx = a.group.position.x + a.direction.x * step;
                     const nz = a.group.position.z + a.direction.z * step;
-                    const wx = chunk.cx * CHUNK_SIZE + nx;
-                    const wz = chunk.cz * CHUNK_SIZE + nz;
+                    const wx = chunk.cx * CHUNK_SIZE + nx, wz = chunk.cz * CHUNK_SIZE + nz;
                     const wy = Math.floor(a.group.position.y - 0.5);
                     if (!isSolidAt(wx, wy + 1, wz) && isSolidAt(wx, wy, wz)) {
                         if (nx >= 0 && nx < CHUNK_SIZE && nz >= 0 && nz < CHUNK_SIZE) {
@@ -841,12 +827,9 @@ function updateAnimals(delta) {
                         } else a.direction.negate();
                     } else a.direction.negate();
                     a.group.rotation.y = Math.atan2(a.direction.x, a.direction.z);
-                    // Animation des pattes
-                    const legs = a.group.userData.legs;
-                    if (legs) {
-                        for (let i = 0; i < legs.length; i++) {
-                            legs[i].rotation.x = Math.sin(a.walkPhase + i * 1.5) * 0.3;
-                        }
+                    // Animation des pattes : a.legs est une ref directe, pas de clone foireux
+                    for (let i = 0; i < a.legs.length; i++) {
+                        a.legs[i].rotation.x = Math.sin(a.walkPhase + i * 1.5) * 0.3;
                     }
                 }
                 a.soundTimer -= delta;
@@ -861,7 +844,7 @@ function updateAnimals(delta) {
 }
 
 // ============================================================
-// MONSTRES
+// MONSTRES (chaque monstre a ses propres meshes)
 // ============================================================
 const MONSTER_TYPES = {
     zombie:  { color: 0x4A7A4A, size: 0.9, hp: 10, damage: 3, speed: 1.5, xp: 2, sound: 180, soundType: 'sawtooth' },
@@ -870,22 +853,20 @@ const MONSTER_TYPES = {
     wolf:    { color: 0x606060, size: 0.7, hp: 7,  damage: 3, speed: 2.2, xp: 2, sound: 260, soundType: 'sawtooth' },
     golem:   { color: 0x707070, size: 1.3, hp: 25, damage: 6, speed: 0.9, xp: 5, sound: 120, soundType: 'square' },
 };
-let monsterTemplateCache = {};
 
 function createMonsterMesh(type) {
-    if (monsterTemplateCache[type]) return monsterTemplateCache[type];
     const t = MONSTER_TYPES[type];
     const group = new THREE.Group();
-    const body = new THREE.Mesh(new THREE.BoxGeometry(t.size * 0.9, t.size * 1.1, t.size * 0.7), new THREE.MeshLambertMaterial({ color: t.color, emissive: 0x110000 }));
+    const bodyMat = new THREE.MeshLambertMaterial({ color: t.color, emissive: 0x110000 });
+    const body = new THREE.Mesh(new THREE.BoxGeometry(t.size * 0.9, t.size * 1.1, t.size * 0.7), bodyMat);
     body.castShadow = state.shadows;
     body.position.y = t.size * 0.9;
     group.add(body);
-    group.userData.body = body;
-    const head = new THREE.Mesh(new THREE.BoxGeometry(t.size * 0.7, t.size * 0.7, t.size * 0.7), new THREE.MeshLambertMaterial({ color: t.color }));
+    const headMat = new THREE.MeshLambertMaterial({ color: t.color });
+    const head = new THREE.Mesh(new THREE.BoxGeometry(t.size * 0.7, t.size * 0.7, t.size * 0.7), headMat);
     head.castShadow = state.shadows;
     head.position.y = t.size * 1.75;
     group.add(head);
-    group.userData.head = head;
     const eyeMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
     const eyeGeo = new THREE.BoxGeometry(t.size * 0.15, t.size * 0.15, t.size * 0.05);
     const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
@@ -899,11 +880,10 @@ function createMonsterMesh(type) {
     const armL = new THREE.Mesh(armGeo, armMat);
     armL.position.set(-t.size * 0.55, t.size * 1.0, 0);
     group.add(armL);
-    group.userData.armL = armL;
     const armR = new THREE.Mesh(armGeo, armMat);
     armR.position.set(t.size * 0.55, t.size * 1.0, 0);
     group.add(armR);
-    group.userData.armR = armR;
+    // Barre de vie : canvas propre à chaque monstre
     const hpCanvas = document.createElement('canvas');
     hpCanvas.width = 64; hpCanvas.height = 8;
     const hpTex = new THREE.CanvasTexture(hpCanvas);
@@ -911,25 +891,18 @@ function createMonsterMesh(type) {
     hpSprite.position.y = t.size * 2.5;
     hpSprite.scale.set(1, 0.125, 1);
     group.add(hpSprite);
-    group.userData.hpSprite = hpSprite;
-    group.userData.hpCanvas = hpCanvas;
-    group.userData.hpTex = hpTex;
-    group.visible = false;
-    monsterTemplateCache[type] = group;
-    return group;
+    return { group, body, head, armL, armR, hpSprite, hpCanvas, hpTex };
 }
 
 function updateMonsterHPBar(monster) {
-    const canvas = monster.group.userData.hpCanvas;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    const ctx = monster.hpCanvas.getContext('2d');
     ctx.clearRect(0, 0, 64, 8);
     ctx.fillStyle = 'rgba(0,0,0,0.7)';
     ctx.fillRect(0, 0, 64, 8);
     const pct = Math.max(0, monster.hp / monster.maxHp);
     ctx.fillStyle = pct > 0.5 ? '#4CAF50' : pct > 0.25 ? '#FF9800' : '#F44336';
     ctx.fillRect(1, 1, 62 * pct, 6);
-    monster.group.userData.hpTex.needsUpdate = true;
+    monster.hpTex.needsUpdate = true;
 }
 
 function spawnMonsterInChunk(chunk) {
@@ -944,15 +917,18 @@ function spawnMonsterInChunk(chunk) {
     let topY = 40;
     while (topY > 0 && !isSolidAt(gx, topY, gz)) topY--;
     if (topY < 2) return;
-    const group = createMonsterMesh(type).clone();
-    group.userData = { ...createMonsterMesh(type).userData };
-    group.visible = true;
-    group.position.set(lx, topY + 1, lz);
-    chunk.group.add(group);
+    // Éviter spawn dans la montagne
+    if (isSolidAt(gx, topY + 1, gz)) return;
+    const mesh = createMonsterMesh(type);
+    mesh.group.position.set(lx, topY + 1, lz);
+    chunk.group.add(mesh.group);
     const data = MONSTER_TYPES[type];
     const monster = {
-        group, type,
-        hp: data.hp, maxHp: data.hp,
+        group: mesh.group,
+        body: mesh.body, head: mesh.head,
+        armL: mesh.armL, armR: mesh.armR,
+        hpSprite: mesh.hpSprite, hpCanvas: mesh.hpCanvas, hpTex: mesh.hpTex,
+        type, hp: data.hp, maxHp: data.hp,
         damage: data.damage, speed: data.speed,
         direction: new THREE.Vector3(),
         attackCooldown: 0, walkPhase: 0,
@@ -1033,6 +1009,9 @@ function updateMonsters(delta) {
                     m.group.position.y -= delta * 0.5;
                     if (m.deathTimer <= 0) {
                         chunk.group.remove(m.group);
+                        m.group.traverse(o => {
+                            if (o.geometry && o.geometry !== sharedGeometry && !o.isSprite) o.geometry.dispose();
+                        });
                         chunk.monsters.splice(i, 1);
                     }
                     continue;
@@ -1040,8 +1019,7 @@ function updateMonsters(delta) {
                 total++;
                 if (m.hitFlash > 0) {
                     m.hitFlash -= delta;
-                    const bodyMat = m.group.userData.body?.material;
-                    if (bodyMat) bodyMat.emissive.setHex(m.hitFlash > 0 ? 0xff0000 : 0x110000);
+                    m.body.material.emissive.setHex(m.hitFlash > 0 ? 0xff0000 : 0x110000);
                 }
                 const wx = chunk.cx * CHUNK_SIZE + m.group.position.x;
                 const wz = chunk.cz * CHUNK_SIZE + m.group.position.z;
@@ -1059,8 +1037,7 @@ function updateMonsters(delta) {
                         const step = m.speed * delta;
                         const nx = m.group.position.x + dirX * step;
                         const nz = m.group.position.z + dirZ * step;
-                        const gx = chunk.cx * CHUNK_SIZE + nx;
-                        const gz = chunk.cz * CHUNK_SIZE + nz;
+                        const gx = chunk.cx * CHUNK_SIZE + nx, gz = chunk.cz * CHUNK_SIZE + nz;
                         const gy = Math.floor(m.group.position.y - 0.5);
                         if (!isSolidAt(gx, gy + 1, gz)) {
                             if (nx >= 0 && nx < CHUNK_SIZE && nz >= 0 && nz < CHUNK_SIZE) {
@@ -1073,13 +1050,13 @@ function updateMonsters(delta) {
                         }
                         m.group.rotation.y = Math.atan2(dirX, dirZ);
                         m.walkPhase += delta * 8;
-                        if (m.group.userData.armL) m.group.userData.armL.rotation.x = Math.sin(m.walkPhase) * 0.6;
-                        if (m.group.userData.armR) m.group.userData.armR.rotation.x = -Math.sin(m.walkPhase) * 0.6;
+                        m.armL.rotation.x = Math.sin(m.walkPhase) * 0.6;
+                        m.armR.rotation.x = -Math.sin(m.walkPhase) * 0.6;
                     } else {
                         if (m.attackCooldown <= 0) {
                             m.attackCooldown = 1.0;
                             damagePlayer(m.damage);
-                            if (m.group.userData.armR) m.group.userData.armR.rotation.x = -1.5;
+                            m.armR.rotation.x = -1.5;
                         }
                     }
                 } else {
@@ -1118,11 +1095,8 @@ function updateMonsters(delta) {
 }
 
 // ============================================================
-// PROJECTILES (arc, arbalète)
+// PROJECTILES
 // ============================================================
-const projectileGeo = new THREE.SphereGeometry(0.1, 6, 6);
-const projectileMat = new THREE.MeshBasicMaterial({ color: 0xDDDDDD });
-
 function fireProjectile() {
     if (activeProjectiles.length >= MAX_PROJECTILES) return;
     if (state.ammo <= 0) { showFloatingMessage('Plus de flèches !', 'damage'); return; }
@@ -1148,7 +1122,6 @@ function updateProjectiles(delta) {
         p.vel.y -= 9.8 * delta;
         p.mesh.position.add(p.vel.clone().multiplyScalar(delta));
         p.life -= delta;
-        // Collision monstre
         let hit = false;
         for (const chunk of state.chunks.values()) {
             for (const m of chunk.monsters) {
@@ -1171,12 +1144,17 @@ function updateProjectiles(delta) {
             }
             if (hit) break;
         }
-        // Collision bloc
-        if (!hit) {
+        // Récupération : si pas de monstre et qu'on est au sol (bloc solide dessous)
+        if (!hit && p.life < 1.5) {
             const bx = Math.floor(p.mesh.position.x);
             const by = Math.floor(p.mesh.position.y);
             const bz = Math.floor(p.mesh.position.z);
-            if (isSolidAt(bx, by, bz)) hit = true;
+            if (isSolidAt(bx, by - 1, bz) || isSolidAt(bx, by, bz)) {
+                // Récupérer la flèche
+                state.ammo++;
+                document.getElementById('ammo-count').textContent = state.ammo;
+                hit = true;
+            }
         }
         if (hit || p.life <= 0) {
             scene.remove(p.mesh);
@@ -1270,8 +1248,191 @@ function setupUI() {
     document.getElementById('chk-weather').addEventListener('change', (e) => { state.weatherAuto = e.target.checked; saveSettings(); });
 }
 
+function setupTouchControls() {
+    const jBase = document.getElementById('joystick-base');
+    const jKnob = document.getElementById('joystick-knob');
+    const jC = document.getElementById('joystick-container');
+    let jActive = false;
+    let jStartX = 0, jStartY = 0;
+    let jVector = { x: 0, y: 0 };
+    const jRect = () => jBase.getBoundingClientRect();
+
+    jC.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        const r = jRect();
+        jStartX = r.left + r.width / 2;
+        jStartY = r.top + r.height / 2;
+        jActive = true;
+    }, { passive: false });
+
+    document.addEventListener('touchmove', (e) => {
+        if (!jActive) return;
+        const t = e.touches[0];
+        let dx = t.clientX - jStartX;
+        let dy = t.clientY - jStartY;
+        const max = 60;
+        const len = Math.sqrt(dx * dx + dy * dy);
+        if (len > max) { dx = dx / len * max; dy = dy / len * max; }
+        jKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+        jVector.x = dx / max;
+        jVector.y = dy / max;
+    }, { passive: true });
+
+    document.addEventListener('touchend', () => {
+        if (!jActive) return;
+        jActive = false;
+        jVector.x = 0; jVector.y = 0;
+        jKnob.style.transform = 'translate(-50%, -50%)';
+    });
+
+    // Exposer pour stepPlayer
+    window._mobileInput = {
+        getAxis: () => jVector,
+    };
+
+    // Rotation caméra par swipe (si pas sur joystick)
+    let touchLookId = null, lastX = 0, lastY = 0;
+    renderer.domElement.addEventListener('touchstart', (e) => {
+        const t = e.changedTouches[0];
+        const jr = jBase.getBoundingClientRect();
+        const inJoy = t.clientX >= jr.left && t.clientX <= jr.right &&
+                      t.clientY >= jr.top && t.clientY <= jr.bottom;
+        if (!inJoy && touchLookId === null) {
+            touchLookId = t.identifier;
+            lastX = t.clientX;
+            lastY = t.clientY;
+        }
+    }, { passive: true });
+
+    renderer.domElement.addEventListener('touchmove', (e) => {
+        if (touchLookId === null) return;
+        for (const t of e.changedTouches) {
+            if (t.identifier !== touchLookId) continue;
+            const dx = t.clientX - lastX;
+            const dy = t.clientY - lastY;
+            lastX = t.clientX;
+            lastY = t.clientY;
+            const euler = new THREE.Euler(0, 0, 0, 'YXZ');
+            euler.setFromQuaternion(camera.quaternion);
+            euler.y -= dx * 0.005;
+            euler.x -= dy * 0.005;
+            euler.x = Math.max(-Math.PI / 2 + 0.01, Math.min(Math.PI / 2 - 0.01, euler.x));
+            camera.quaternion.setFromEuler(euler);
+        }
+    }, { passive: true });
+
+    renderer.domElement.addEventListener('touchend', (e) => {
+        for (const t of e.changedTouches) {
+            if (t.identifier === touchLookId) touchLookId = null;
+        }
+    });
+
+    // Boutons mobiles
+    document.getElementById('mb-attack').addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        handleAttackAction();
+    }, { passive: false });
+    document.getElementById('mb-place').addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        handlePlaceAction();
+    }, { passive: false });
+    document.getElementById('mb-jump').addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        keys['Space'] = true;
+        setTimeout(() => keys['Space'] = false, 200);
+    }, { passive: false });
+    document.getElementById('mb-descend').addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        keys['ShiftLeft'] = true;
+        setTimeout(() => keys['ShiftLeft'] = false, 200);
+    }, { passive: false });
+    document.getElementById('mb-inventory').addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        toggleInventory();
+    }, { passive: false });
+    document.getElementById('mb-fly').addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        state.isFlying = !state.isFlying;
+        player.velocity.set(0, 0, 0);
+        updateModeUI();
+    }, { passive: false });
+}
+
+function handleAttackAction() {
+    if (state.attackCooldown > 0) return;
+    const w = WEAPON_REGISTRY[state.equippedWeapon.key];
+    if (w && w.type === 'ranged') { fireProjectile(); return; }
+    // Melee
+    const range = w ? w.range : 3;
+    const pcx = Math.floor(player.position.x / CHUNK_SIZE);
+    const pcz = Math.floor(player.position.z / CHUNK_SIZE);
+    let closest = null, closestDist = range;
+    const origin = camera.position;
+    const camDir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+    for (let dx = -1; dx <= 1; dx++) {
+        for (let dz = -1; dz <= 1; dz++) {
+            const chunk = state.chunks.get(chunkKey(pcx + dx, pcz + dz));
+            if (!chunk) continue;
+            for (const m of chunk.monsters) {
+                if (!m.group || m.state === 'dead') continue;
+                const wx = chunk.cx * CHUNK_SIZE + m.group.position.x;
+                const wz = chunk.cz * CHUNK_SIZE + m.group.position.z;
+                const wy = chunk.group.position.y + m.group.position.y;
+                const ddx = wx - origin.x, ddy = wy - origin.y, ddz = wz - origin.z;
+                const dist = Math.sqrt(ddx * ddx + ddy * ddy + ddz * ddz);
+                if (dist < closestDist) {
+                    const dirTo = new THREE.Vector3(ddx, ddy, ddz).normalize();
+                    if (dirTo.dot(camDir) > 0.6) { closestDist = dist; closest = m; }
+                }
+            }
+        }
+    }
+    if (closest) attackMonster(closest);
+    else {
+        // Casser le bloc visé
+        raycaster.setFromCamera(screenCenter, camera);
+        const meshes = getNearbyMeshes();
+        const hits = raycaster.intersectObjects(meshes, false);
+        if (hits.length > 0) {
+            const h = hits[0];
+            const { gx, gy, gz } = hitToBlock(h);
+            removeBlockGlobal(gx, gy, gz);
+        }
+    }
+}
+
+function handlePlaceAction() {
+    raycaster.setFromCamera(screenCenter, camera);
+    const meshes = getNearbyMeshes();
+    const hits = raycaster.intersectObjects(meshes, false);
+    if (hits.length === 0) return;
+    const h = hits[0];
+    const n = h.face.normal.clone().applyQuaternion(h.object.quaternion);
+    const point = h.point;
+    const gx = Math.floor(point.x + n.x * 0.5);
+    const gy = Math.floor(point.y + n.y * 0.5);
+    const gz = Math.floor(point.z + n.z * 0.5);
+    if (isSolidAt(gx, gy, gz)) return;
+    const r = player.radius, hh = player.height;
+    if (gx + 0.5 > player.position.x - r && gx - 0.5 < player.position.x + r &&
+        gy + 0.5 > player.position.y - hh && gy - 0.5 < player.position.y + 0.1 &&
+        gz + 0.5 > player.position.z - r && gz - 0.5 < player.position.z + r) return;
+    setBlockGlobal(gx, gy, gz, state.selectedBlock);
+}
+
+// Convertit un hit Three.js en coordonnées de bloc
+function hitToBlock(hit) {
+    const n = hit.face.normal.clone().applyQuaternion(hit.object.quaternion);
+    const p = hit.point;
+    // Reculer d'un demi-bloc vers l'intérieur de la face
+    const gx = Math.floor(p.x + n.x * 0.5 - n.x * 0.01);
+    const gy = Math.floor(p.y + n.y * 0.5 - n.y * 0.01);
+    const gz = Math.floor(p.z + n.z * 0.5 - n.z * 0.01);
+    return { gx, gy, gz };
+}
+
 function cycleWeather() {
-    const order = ['clear', 'rain', 'storm', 'fog'];
+    const order = ['clear', 'rain', 'storm'];
     const i = order.indexOf(state.weather);
     state.weather = order[(i + 1) % order.length];
     updateWeatherUI();
@@ -1300,7 +1461,6 @@ function updateSelectedBlockUI() {
     document.querySelectorAll('.hotbar-slot').forEach(s => s.classList.toggle('active', s.dataset.block === state.selectedBlock));
     document.querySelectorAll('.inventory-slot').forEach(s => s.classList.toggle('selected', s.dataset.block === state.selectedBlock));
 }
-
 function updateWeaponUI() {
     const w = WEAPON_REGISTRY[state.equippedWeapon.key];
     if (!w) return;
@@ -1309,14 +1469,9 @@ function updateWeaponUI() {
     const pct = (state.equippedWeapon.durability / w.durability) * 100;
     document.getElementById('weapon-durability-fill').style.width = pct + '%';
     const ammoInfo = document.getElementById('ammo-info');
-    if (w.type === 'ranged') {
-        ammoInfo.style.display = 'block';
-        document.getElementById('ammo-count').textContent = state.ammo;
-    } else {
-        ammoInfo.style.display = 'none';
-    }
+    if (w.type === 'ranged') { ammoInfo.style.display = 'block'; document.getElementById('ammo-count').textContent = state.ammo; }
+    else ammoInfo.style.display = 'none';
 }
-
 function updateModeUI() {
     const el = document.getElementById('mode-indicator');
     el.textContent = state.isFlying ? 'Vol ✈️' : 'Marche 🚶';
@@ -1445,8 +1600,7 @@ function triggerGameOver() {
 function restartGame() {
     state.isDead = false;
     state.health = state.maxHealth;
-    state.kills = 0;
-    state.coins = 0;
+    state.kills = 0; state.coins = 0;
     state.damageCooldown = 0;
     document.getElementById('kills-value').textContent = '0';
     document.getElementById('coins-value').textContent = '0';
@@ -1463,12 +1617,15 @@ function restartGame() {
 // ============================================================
 // TEMPS
 // ============================================================
-function setTime(t) { state.dayTime = ((t % 1) + 1) % 1; updateTimeUI(); saveSettings(); }
+function setTime(t) { state.dayTime = ((t % 1) + 1) % 1; updateTimeUI(); saveSettings(); markShadowDirty(); }
 function toggleCycle() { state.cycleAuto = !state.cycleAuto; updateCycleUI(); saveSettings(); }
 function updateDayNight(delta) {
     if (state.cycleAuto) {
         state.dayTime = (state.dayTime + delta / 180) % 1;
         updateTimeUI();
+        // Ombre mise à jour ~2× par seconde seulement
+        shadowTimer += delta;
+        if (shadowTimer > 0.5) { shadowTimer = 0; markShadowDirty(); }
     }
     const angle = (state.dayTime - 0.25) * Math.PI * 2;
     const sunHeight = Math.sin(angle);
@@ -1489,14 +1646,15 @@ function updateDayNight(delta) {
 }
 
 // ============================================================
-// SAUVEGARDE
+// SAUVEGARDE (uniquement les modifications)
 // ============================================================
 let saveTimeout = null;
 let lastAutoSave = 0;
+
 function saveSettings() {
     try {
         localStorage.setItem(SAVE_KEY, JSON.stringify({
-            v: 6,
+            v: 7,
             settings: {
                 walkSpeed: state.walkSpeed, flySpeed: state.flySpeed,
                 renderDistance: state.renderDistance, maxAnimals: state.maxAnimals,
@@ -1515,19 +1673,42 @@ function saveSettings() {
         }));
     } catch (e) {}
 }
+
 function saveWorld() {
     if (saveTimeout) clearTimeout(saveTimeout);
-    saveTimeout = setTimeout(saveWorldNow, 600);
+    saveTimeout = setTimeout(saveWorldNow, 500);
 }
+
 function saveWorldNow() {
     try {
-        const mods = {};
-        for (const chunk of state.chunks.values()) {
-            for (const [gk, type] of Object.entries(chunk.globalBlocks)) mods[gk] = type;
+        // Ne stocker que les modifications, taille limitée
+        const mods = state.savedModifications;
+        let json = JSON.stringify({ v: 7, modifications: mods });
+        // Si trop gros (>4 Mo), réduire
+        if (json.length > 4_000_000) {
+            // Garder seulement les 5000 blocs les plus récents (approximation)
+            const keys = Object.keys(mods);
+            const kept = {};
+            for (let i = Math.max(0, keys.length - 5000); i < keys.length; i++) {
+                kept[keys[i]] = mods[keys[i]];
+            }
+            json = JSON.stringify({ v: 7, modifications: kept });
         }
-        localStorage.setItem(SAVE_KEY + '_world', JSON.stringify({ v: 6, modifications: mods }));
-    } catch (e) {}
+        localStorage.setItem(SAVE_KEY + '_world', json);
+    } catch (e) {
+        // Quota dépassé : purger les plus anciennes modifs
+        try {
+            const keys = Object.keys(state.savedModifications);
+            const kept = {};
+            for (let i = Math.max(0, keys.length - 2000); i < keys.length; i++) {
+                kept[keys[i]] = state.savedModifications[keys[i]];
+            }
+            state.savedModifications = kept;
+            localStorage.setItem(SAVE_KEY + '_world', JSON.stringify({ v: 7, modifications: kept }));
+        } catch (e2) {}
+    }
 }
+
 function autoSaveCheck(delta) {
     lastAutoSave += delta;
     if (lastAutoSave > 30) {
@@ -1547,11 +1728,11 @@ function loadSave() {
             const s = data.settings;
             state.walkSpeed = s.walkSpeed ?? 5;
             state.flySpeed = s.flySpeed ?? 14;
-            state.renderDistance = s.renderDistance ?? 128;
+            state.renderDistance = s.renderDistance ?? (IS_MOBILE ? 64 : 128);
             state.maxAnimals = s.maxAnimals ?? 16;
             state.maxMonsters = s.maxMonsters ?? 8;
-            state.quality = s.quality ?? 'medium';
-            state.shadows = s.shadows !== undefined ? s.shadows : true;
+            state.quality = s.quality ?? (IS_MOBILE ? 'low' : 'medium');
+            state.shadows = s.shadows !== undefined ? s.shadows : !IS_MOBILE;
             state.cycleAuto = s.cycleAuto !== undefined ? s.cycleAuto : true;
             state.showFPS = s.showFPS !== undefined ? s.showFPS : true;
             state.survivalEnabled = s.survivalEnabled !== undefined ? s.survivalEnabled : true;
@@ -1613,8 +1794,7 @@ function resetWorld() {
     player.position.set(0.5, 30, 0.5);
     camera.position.copy(player.position);
     state.health = state.maxHealth;
-    state.kills = 0;
-    state.coins = 0;
+    state.kills = 0; state.coins = 0;
     updateHealthUI();
     document.getElementById('kills-value').textContent = '0';
     document.getElementById('coins-value').textContent = '0';
@@ -1623,7 +1803,7 @@ function resetWorld() {
 }
 
 // ============================================================
-// QUALITÉ
+// QUALITÉ / OMBRES
 // ============================================================
 function setQuality(q) {
     state.quality = q;
@@ -1635,24 +1815,26 @@ function setQuality(q) {
     sunLight.shadow.mapSize.width = shadowMapSize;
     sunLight.shadow.mapSize.height = shadowMapSize;
     if (sunLight.shadow.map) { sunLight.shadow.map.dispose(); sunLight.shadow.map = null; }
-    renderer.shadowMap.needsUpdate = true;
     document.getElementById('render-distance').value = state.renderDistance;
     document.getElementById('render-distance-val').textContent = state.renderDistance;
     scene.fog.far = state.renderDistance;
     camera.far = state.renderDistance * 2;
     camera.updateProjectionMatrix();
+    markShadowDirty();
     saveSettings();
 }
+
 function applyShadows() {
     renderer.shadowMap.enabled = state.shadows;
     sunLight.castShadow = state.shadows;
-    scene.traverse(obj => {
-        if (obj.isMesh) {
-            obj.castShadow = state.shadows;
-            obj.receiveShadow = state.shadows;
-        }
-    });
-    renderer.shadowMap.needsUpdate = true;
+    markShadowDirty();
+    // Appliquer sur les chunks
+    for (const chunk of state.chunks.values()) {
+        chunk.meshes.forEach(m => {
+            m.castShadow = state.shadows;
+            m.receiveShadow = state.shadows;
+        });
+    }
 }
 
 // ============================================================
@@ -1694,7 +1876,7 @@ function setupEventListeners() {
     document.addEventListener('keydown', onKeyDown);
     document.addEventListener('keyup', onKeyUp);
     renderer.domElement.addEventListener('click', () => {
-        if (!state.isInventoryOpen && !state.isSettingsOpen && !state.isDead && !state.isPointerLocked) {
+        if (!state.isInventoryOpen && !state.isSettingsOpen && !state.isDead && !state.isPointerLocked && !IS_MOBILE) {
             renderer.domElement.requestPointerLock();
         }
     });
@@ -1721,6 +1903,7 @@ function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
+    markShadowDirty();
 }
 function onKeyDown(e) {
     keys[e.code] = true;
@@ -1777,79 +1960,8 @@ function getNearbyMeshes() {
 function onMouseDown(e) {
     if (!state.isPointerLocked || state.isInventoryOpen || state.isSettingsOpen || state.isDead) return;
     if (e.button !== 0 && e.button !== 2) return;
-    const w = WEAPON_REGISTRY[state.equippedWeapon.key];
-
-    // Attaque
-    if (e.button === 0 && state.attackCooldown <= 0) {
-        if (w && w.type === 'ranged') { fireProjectile(); return; }
-        const range = w ? w.range : 3;
-        const pcx = Math.floor(player.position.x / CHUNK_SIZE);
-        const pcz = Math.floor(player.position.z / CHUNK_SIZE);
-        let closest = null, closestDist = range;
-        const origin = camera.position;
-        const camDir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
-        for (let dx = -1; dx <= 1; dx++) {
-            for (let dz = -1; dz <= 1; dz++) {
-                const chunk = state.chunks.get(chunkKey(pcx + dx, pcz + dz));
-                if (!chunk) continue;
-                for (const m of chunk.monsters) {
-                    if (!m.group || m.state === 'dead') continue;
-                    const wx = chunk.cx * CHUNK_SIZE + m.group.position.x;
-                    const wz = chunk.cz * CHUNK_SIZE + m.group.position.z;
-                    const wy = chunk.group.position.y + m.group.position.y;
-                    const ddx = wx - origin.x, ddy = wy - origin.y, ddz = wz - origin.z;
-                    const dist = Math.sqrt(ddx * ddx + ddy * ddy + ddz * ddz);
-                    if (dist < closestDist) {
-                        const dirTo = new THREE.Vector3(ddx, ddy, ddz).normalize();
-                        if (dirTo.dot(camDir) > 0.6) { closestDist = dist; closest = m; }
-                    }
-                }
-            }
-        }
-        if (closest) { attackMonster(closest); return; }
-    }
-
-    // Raycast bloc
-    raycaster.setFromCamera(screenCenter, camera);
-    const meshes = getNearbyMeshes();
-    const intersects = raycaster.intersectObjects(meshes, false);
-    if (intersects.length === 0) return;
-    const hit = intersects[0];
-    const mesh = hit.object;
-    let gx, gy, gz;
-    // Les chunks utilisent maintenant des meshes fusionnés par type, donc on calcule depuis la position du hit
-    const point = hit.point;
-    // Décaler légèrement vers la normale pour obtenir le bloc touché
-    const n = hit.face ? hit.face.normal.clone() : new THREE.Vector3(0, 1, 0);
-    n.applyQuaternion(mesh.quaternion);
-    // Le point est sur la face → avancer d'un demi-bloc vers l'intérieur
-    gx = Math.floor(point.x + n.x * 0.01);
-    gy = Math.floor(point.y + n.y * 0.01);
-    gz = Math.floor(point.z + n.z * 0.01);
-    // Ajuster avec position du chunk
-    gx = Math.floor(point.x - n.x * 0.5 + (n.x > 0 ? 0 : 0));
-    // Plus fiable : arrondir le point vers le bloc
-    gx = Math.floor(point.x + n.x * -0.5);
-    gy = Math.floor(point.y + n.y * -0.5);
-    gz = Math.floor(point.z + n.z * -0.5);
-
-    if (e.button === 0) {
-        removeBlockGlobal(gx, gy, gz);
-        playSound(180, 0.08, 'square', 0.04);
-    } else if (e.button === 2) {
-        const normal = hit.face ? hit.face.normal.clone() : new THREE.Vector3(0, 1, 0);
-        normal.applyQuaternion(mesh.quaternion);
-        const px = gx + Math.round(normal.x);
-        const py = gy + Math.round(normal.y);
-        const pz = gz + Math.round(normal.z);
-        if (isSolidAt(px, py, pz)) return;
-        const r = player.radius, h = player.height;
-        if (px + 0.5 > player.position.x - r && px - 0.5 < player.position.x + r &&
-            py + 0.5 > player.position.y - h && py - 0.5 < player.position.y + 0.1 &&
-            pz + 0.5 > player.position.z - r && pz - 0.5 < player.position.z + r) return;
-        setBlockGlobal(px, py, pz, state.selectedBlock);
-        playSound(320, 0.06, 'triangle', 0.03);
-    }
+    if (e.button === 0) handleAttackAction();
+    else if (e.button === 2) handlePlaceAction();
 }
 
 // ============================================================
@@ -1865,6 +1977,7 @@ function updatePlayer(delta) {
     }
     camera.position.copy(player.position);
 }
+
 function stepPlayer(dt) {
     const walkSpd = state.walkSpeed, flySpd = state.flySpeed;
     const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
@@ -1876,6 +1989,14 @@ function stepPlayer(dt) {
     if (keys['KeyS']) dir.sub(forward);
     if (keys['KeyA'] || keys['KeyQ']) dir.sub(right);
     if (keys['KeyD']) dir.add(right);
+    // Mobile joystick
+    if (IS_MOBILE && window._mobileInput) {
+        const axis = window._mobileInput.getAxis();
+        if (Math.abs(axis.x) > 0.1 || Math.abs(axis.y) > 0.1) {
+            dir.add(forward.clone().multiplyScalar(-axis.y));
+            dir.add(right.clone().multiplyScalar(axis.x));
+        }
+    }
     if (dir.lengthSq() > 0) dir.normalize();
     const targetSpeed = state.isFlying ? flySpd : walkSpd;
     player.targetVel.x = dir.x * targetSpeed;
@@ -1919,7 +2040,7 @@ function stepPlayer(dt) {
 // ============================================================
 // BOUCLE
 // ============================================================
-let fpsFrames = 0, fpsTime = 0, fpsUpdateAccum = 0;
+let fpsFrames = 0, fpsTime = 0;
 
 function animate() {
     requestAnimationFrame(animate);
@@ -1941,12 +2062,11 @@ function animate() {
     autoSaveCheck(delta);
 
     minimapAccum += delta;
-    if (minimapAccum >= 0.12) {
+    if (minimapAccum >= 0.15) {
         minimapAccum = 0;
         updateMinimap();
     }
 
-    // Compteurs UI à 2 Hz
     fpsFrames++;
     fpsTime += delta;
     if (fpsTime >= 0.5) {
@@ -1958,7 +2078,12 @@ function animate() {
         document.getElementById('monster-counter').textContent = 'Monstres : ' + state.monsterCount;
     }
 
-    if (state.shadows) renderer.shadowMap.needsUpdate = true;
+    // Ombre : update seulement si dirty
+    if (shadowDirty && state.shadows) {
+        renderer.shadowMap.needsUpdate = true;
+        shadowDirty = false;
+    }
+
     renderer.render(scene, camera);
 }
 
